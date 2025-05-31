@@ -1,0 +1,4 @@
+htmlcov/
+__pycache__/
+logs/fcm.log
+venv/
