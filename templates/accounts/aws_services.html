@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}Serviços AWS - {{ account.nome }} - FCM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-server"></i> Serviços AWS - {{ account.nome }}</h1>
+    <div>
+        <a href="{% url 'accounts:detail' account.id %}" class="btn btn-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+        <button type="button" class="btn btn-primary" onclick="refreshServices()">
+            <i class="bi bi-arrow-clockwise"></i> Atualizar
+        </button>
+    </div>
+</div>
+
+<!-- Account Info -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-1">{{ account.nome }}</h5>
+                <p class="text-muted mb-0">
+                    <strong>ID da Conta:</strong> <code>{{ account.id_conta }}</code> |
+                    <strong>Access Key:</strong> <code>{{ account.client|truncatechars:20 }}</code>
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-success">
+                    <i class="bi bi-check-circle"></i> Conectado
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Services Overview -->
+<div class="row mb-4" id="services-overview">
+    {% if services_info %}
+        <!-- EC2 -->
+        {% if services_info.ec2 %}
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ services_info.ec2.total_instances }}</h4>
+                            <p class="mb-0">Instâncias EC2</p>
+                            <small>{{ services_info.ec2.running_instances }} em execução</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-server display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- S3 -->
+        {% if services_info.s3 %}
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ services_info.s3.total_buckets }}</h4>
+                            <p class="mb-0">Buckets S3</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-bucket display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- RDS -->
+        {% if services_info.rds %}
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ services_info.rds.total_instances }}</h4>
+                            <p class="mb-0">Instâncias RDS</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-database display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <h4>Carregando informações dos serviços...</h4>
+                    <p class="text-muted">Aguarde enquanto obtemos os dados da AWS.</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Detailed Services Information -->
+{% if services_info %}
+<div class="row">
+    <!-- EC2 Details -->
+    {% if services_info.ec2 %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-server"></i> Amazon EC2</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ services_info.ec2.total_instances }}</h3>
+                            <p class="text-muted mb-0">Total de Instâncias</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-success">{{ services_info.ec2.running_instances }}</h3>
+                            <p class="text-muted mb-0">Em Execução</p>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <p class="text-muted mb-0">
+                    <small>Região: us-east-1 (N. Virginia)</small>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- S3 Details -->
+    {% if services_info.s3 %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bucket"></i> Amazon S3</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h3 class="text-success">{{ services_info.s3.total_buckets }}</h3>
+                    <p class="text-muted mb-0">Buckets Disponíveis</p>
+                </div>
+                <hr>
+                <p class="text-muted mb-0">
+                    <small>Armazenamento de objetos escalável</small>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- RDS Details -->
+    {% if services_info.rds %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-database"></i> Amazon RDS</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h3 class="text-info">{{ services_info.rds.total_instances }}</h3>
+                    <p class="text-muted mb-0">Instâncias de Banco</p>
+                </div>
+                <hr>
+                <p class="text-muted mb-0">
+                    <small>Banco de dados relacional gerenciado</small>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Additional Services -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Outros Serviços</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-shield-check"></i> Certificate Manager (ACM)</span>
+                        <span class="badge bg-secondary">Em breve</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-cloud"></i> CloudFront</span>
+                        <span class="badge bg-secondary">Em breve</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-diagram-3"></i> Load Balancer</span>
+                        <span class="badge bg-secondary">Em breve</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Help Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Sobre os Serviços AWS</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6><i class="bi bi-server text-primary"></i> Amazon EC2</h6>
+                <p class="small text-muted">Instâncias de computação virtual escaláveis na nuvem.</p>
+            </div>
+            <div class="col-md-4">
+                <h6><i class="bi bi-bucket text-success"></i> Amazon S3</h6>
+                <p class="small text-muted">Armazenamento de objetos seguro e durável.</p>
+            </div>
+            <div class="col-md-4">
+                <h6><i class="bi bi-database text-info"></i> Amazon RDS</h6>
+                <p class="small text-muted">Banco de dados relacional totalmente gerenciado.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshServices() {
+    // Mostrar loading
+    document.getElementById('services-overview').innerHTML = `
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Atualizando...</span>
+                    </div>
+                    <h4>Atualizando informações dos serviços...</h4>
+                    <p class="text-muted">Aguarde enquanto obtemos os dados mais recentes da AWS.</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Recarregar a página após um breve delay
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+</script>
+{% endblock %} 

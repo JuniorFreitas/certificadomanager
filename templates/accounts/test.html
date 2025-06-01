@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - FCM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="bi bi-wifi"></i> {{ title }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Informações da conta -->
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Conta AWS</h6>
+                    <p class="mb-1"><strong>Nome:</strong> {{ account.nome }}</p>
+                    <p class="mb-1"><strong>Account ID:</strong> <code>{{ account.account_id }}</code></p>
+                    <p class="mb-1"><strong>Tipo:</strong> {{ account.get_account_type_display }}</p>
+                    <p class="mb-0"><strong>Status:</strong> 
+                        <span class="badge {{ account.status_badge_class }}">{{ account.status_display }}</span>
+                    </p>
+                </div>
+
+                <!-- Formulário de teste -->
+                <form method="post">
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botão Voltar -->
+<div class="row mt-3">
+    <div class="col-12">
+        <a href="{% url 'accounts:detail' account.id %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar aos Detalhes
+        </a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar funcionalidade AJAX para teste rápido
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Testando...';
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

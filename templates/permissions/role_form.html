@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - FCM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="bi bi-shield"></i> {{ title }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Alertas informativos -->
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Informações sobre Roles</h6>
+                    <ul class="mb-0">
+                        <li><strong>Hierarquia:</strong> Roles definem níveis de acesso no sistema</li>
+                        <li><strong>Flexibilidade:</strong> Combine roles com permissões específicas</li>
+                        <li><strong>Segurança:</strong> Roles inativos não podem ser associados a usuários</li>
+                        <li><strong>Auditoria:</strong> Todas as alterações são registradas</li>
+                    </ul>
+                </div>
+
+                <!-- Formulário -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+
+        <!-- Guia de Roles -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-question-circle"></i> Guia de Roles</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-shield-exclamation text-danger"></i> Administrador</h6>
+                        <ul class="small text-muted">
+                            <li>Acesso total ao sistema</li>
+                            <li>Gerenciamento de usuários e permissões</li>
+                            <li>Configurações do sistema</li>
+                            <li>Relatórios e auditoria</li>
+                        </ul>
+                        
+                        <h6><i class="bi bi-shield-check text-warning"></i> Gerente</h6>
+                        <ul class="small text-muted">
+                            <li>Supervisão de equipes</li>
+                            <li>Relatórios gerenciais</li>
+                            <li>Aprovação de processos</li>
+                            <li>Gestão de recursos da área</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-shield text-primary"></i> Usuário</h6>
+                        <ul class="small text-muted">
+                            <li>Acesso operacional</li>
+                            <li>Gerenciamento de certificados</li>
+                            <li>Operações do dia a dia</li>
+                            <li>Consultas e relatórios básicos</li>
+                        </ul>
+                        
+                        <h6><i class="bi bi-shield-slash text-secondary"></i> Visualizador</h6>
+                        <ul class="small text-muted">
+                            <li>Acesso somente leitura</li>
+                            <li>Consulta de informações</li>
+                            <li>Visualização de relatórios</li>
+                            <li>Sem permissões de alteração</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning mt-3" role="alert">
+                    <small>
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Importante:</strong> Roles são templates de permissões. 
+                        Permissões específicas ainda precisam ser concedidas individualmente.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usuários com este role (se editando) -->
+        {% if role %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Usuários com este Role</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="text-primary">{{ role.user_count }}</h3>
+                                <p class="mb-0">Usuários associados</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'permissions:role_detail' role.id %}" class="btn btn-outline-primary">
+                                <i class="bi bi-eye"></i> Ver Usuários
+                            </a>
+                            <a href="{% url 'permissions:user_role_create' %}" class="btn btn-outline-success">
+                                <i class="bi bi-plus-circle"></i> Associar Usuário
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validação em tempo real
+    const nameField = document.querySelector('#id_name');
+    const descriptionField = document.querySelector('#id_description');
+    
+    if (nameField) {
+        nameField.addEventListener('change', function() {
+            const selectedRole = this.value;
+            
+            // Sugestões de descrição baseadas no role selecionado
+            if (descriptionField && !descriptionField.value.trim()) {
+                const suggestions = {
+                    'admin': 'Acesso total ao sistema com permissões de administração completa.',
+                    'manager': 'Acesso de supervisão com permissões de gerenciamento de equipe.',
+                    'user': 'Acesso operacional padrão com permissões básicas do sistema.',
+                    'viewer': 'Acesso somente leitura para consulta de informações.'
+                };
+                
+                if (suggestions[selectedRole]) {
+                    descriptionField.value = suggestions[selectedRole];
+                    descriptionField.classList.add('is-valid');
+                }
+            }
+        });
+    }
+    
+    // Validação de descrição
+    if (descriptionField) {
+        descriptionField.addEventListener('input', function() {
+            const length = this.value.length;
+            
+            if (length < 10) {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

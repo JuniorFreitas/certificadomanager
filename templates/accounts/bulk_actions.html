@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - FCM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="bi bi-gear"></i> {{ title }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Alerta de aviso -->
+                <div class="alert alert-warning" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Atenção!</h6>
+                    <p class="mb-0">
+                        As ações em lote afetarão múltiplas contas simultaneamente. 
+                        Certifique-se de selecionar apenas as contas desejadas e confirme a ação antes de prosseguir.
+                    </p>
+                </div>
+
+                <!-- Formulário -->
+                <form method="post">
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botão Voltar -->
+<div class="row mt-3">
+    <div class="col-12">
+        <a href="{% url 'accounts:list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar à Lista
+        </a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar confirmação para ações perigosas
+    const form = document.querySelector('form');
+    const actionSelect = document.getElementById('id_action');
+    
+    if (form && actionSelect) {
+        form.addEventListener('submit', function(e) {
+            const action = actionSelect.value;
+            const dangerousActions = ['delete', 'suspend'];
+            
+            if (dangerousActions.includes(action)) {
+                const confirmed = confirm(
+                    'Esta ação é irreversível e pode afetar múltiplas contas. ' +
+                    'Tem certeza de que deseja continuar?'
+                );
+                
+                if (!confirmed) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+    }
+    
+    // Mostrar/ocultar aviso baseado na ação selecionada
+    if (actionSelect) {
+        actionSelect.addEventListener('change', function() {
+            const action = this.value;
+            const warningDiv = document.querySelector('.action-warning');
+            
+            // Remover aviso anterior se existir
+            if (warningDiv) {
+                warningDiv.remove();
+            }
+            
+            // Adicionar novo aviso se necessário
+            if (action === 'delete') {
+                const warning = document.createElement('div');
+                warning.className = 'alert alert-danger mt-2 action-warning';
+                warning.innerHTML = '<i class="bi bi-exclamation-triangle"></i> <strong>Cuidado:</strong> Esta ação excluirá permanentemente as contas selecionadas!';
+                this.closest('.form-group').appendChild(warning);
+            } else if (action === 'validate') {
+                const warning = document.createElement('div');
+                warning.className = 'alert alert-info mt-2 action-warning';
+                warning.innerHTML = '<i class="bi bi-info-circle"></i> <strong>Info:</strong> Esta ação tentará validar as credenciais de todas as contas selecionadas.';
+                this.closest('.form-group').appendChild(warning);
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

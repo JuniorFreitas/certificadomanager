@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ permission.get_permission_type_display }} - {{ permission.user.nome }} - FCM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-key"></i> Detalhes da Permissão
+        <span class="badge {{ permission.status_badge_class }} ms-2">
+            {% if permission.granted %}Concedida{% else %}Revogada{% endif %}
+        </span>
+    </h1>
+    <div class="btn-group" role="group">
+        <a href="{% url 'permissions:edit' permission.id %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        <button type="button" class="btn btn-outline-secondary toggle-permission" 
+                data-permission-id="{{ permission.id }}" 
+                data-current-status="{{ permission.granted|yesno:'true,false' }}">
+            <i class="bi {% if permission.granted %}bi-toggle-on{% else %}bi-toggle-off{% endif %}"></i> 
+            {% if permission.granted %}Revogar{% else %}Conceder{% endif %}
+        </button>
+        <a href="{% url 'permissions:delete' permission.id %}" class="btn btn-outline-danger">
+            <i class="bi bi-trash"></i> Excluir
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informações da Permissão -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações da Permissão</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Usuário:</dt>
+                            <dd class="col-sm-8">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        {{ permission.user.nome|first|upper }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ permission.user.nome }}</strong>
+                                        <br><small class="text-muted">{{ permission.user.email }}</small>
+                                    </div>
+                                </div>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Módulo:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-light text-dark">{{ permission.module_name }}</span>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Ação:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-secondary">{{ permission.action_name }}</span>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Permissão:</dt>
+                            <dd class="col-sm-8">
+                                <strong>{{ permission.get_permission_type_display }}</strong>
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge {{ permission.status_badge_class }}">
+                                    {% if permission.granted %}
+                                        <i class="bi bi-check-circle"></i> Concedida
+                                    {% else %}
+                                        <i class="bi bi-x-circle"></i> Revogada
+                                    {% endif %}
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Criada em:</dt>
+                            <dd class="col-sm-8">{{ permission.data_cad|date:"d/m/Y H:i" }}</dd>
+                            
+                            <dt class="col-sm-4">Criada por:</dt>
+                            <dd class="col-sm-8">{{ permission.usu_cad }}</dd>
+                            
+                            {% if permission.data_atu %}
+                            <dt class="col-sm-4">Atualizada em:</dt>
+                            <dd class="col-sm-8">{{ permission.data_atu|date:"d/m/Y H:i" }}</dd>
+                            
+                            <dt class="col-sm-4">Atualizada por:</dt>
+                            <dd class="col-sm-8">{{ permission.usu_atu }}</dd>
+                            {% endif %}
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outras Permissões do Usuário -->
+        {% if user_permissions %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Outras Permissões do Usuário</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Módulo</th>
+                                <th>Permissão</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for perm in user_permissions %}
+                            <tr>
+                                <td><span class="badge bg-light text-dark">{{ perm.module_name }}</span></td>
+                                <td>{{ perm.get_permission_type_display }}</td>
+                                <td>
+                                    <span class="badge {{ perm.status_badge_class }}">
+                                        {% if perm.granted %}Concedida{% else %}Revogada{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'permissions:detail' perm.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-secondary toggle-permission-quick" 
+                            data-permission-id="{{ permission.id }}" 
+                            data-current-status="{{ permission.granted|yesno:'true,false' }}">
+                        <i class="bi {% if permission.granted %}bi-toggle-on{% else %}bi-toggle-off{% endif %}"></i> 
+                        {% if permission.granted %}Revogar Permissão{% else %}Conceder Permissão{% endif %}
+                    </button>
+                    
+                    <a href="{% url 'users:detail' permission.user.id %}" class="btn btn-outline-primary">
+                        <i class="bi bi-person"></i> Ver Usuário
+                    </a>
+                    
+                    <a href="{% url 'permissions:create' %}" class="btn btn-outline-success">
+                        <i class="bi bi-plus-circle"></i> Nova Permissão
+                    </a>
+                    
+                    <hr>
+                    
+                    <a href="{% url 'permissions:edit' permission.id %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Editar Permissão
+                    </a>
+                    
+                    <a href="{% url 'permissions:list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar à Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações do Módulo -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Sobre o Módulo</h5>
+            </div>
+            <div class="card-body">
+                {% if permission.module_name == "Users" %}
+                    <h6><i class="bi bi-people text-primary"></i> Usuários</h6>
+                    <p class="small text-muted">
+                        Gerenciamento de usuários do sistema, incluindo cadastro, edição, 
+                        exclusão e visualização de perfis.
+                    </p>
+                {% elif permission.module_name == "Certificates" %}
+                    <h6><i class="bi bi-file-earmark-lock text-success"></i> Certificados</h6>
+                    <p class="small text-muted">
+                        Gerenciamento de certificados digitais, incluindo upload, 
+                        validação, renovação e download.
+                    </p>
+                {% elif permission.module_name == "Accounts" %}
+                    <h6><i class="bi bi-cloud text-info"></i> Contas Cloud</h6>
+                    <p class="small text-muted">
+                        Gerenciamento de contas AWS, incluindo credenciais, 
+                        teste de conectividade e informações de serviços.
+                    </p>
+                {% elif permission.module_name == "Resources" %}
+                    <h6><i class="bi bi-server text-secondary"></i> Recursos</h6>
+                    <p class="small text-muted">
+                        Gerenciamento de recursos cloud como S3, EC2, RDS, 
+                        Lambda e outros serviços AWS.
+                    </p>
+                {% elif permission.module_name == "Permissions" %}
+                    <h6><i class="bi bi-key text-warning"></i> Permissões</h6>
+                    <p class="small text-muted">
+                        Gerenciamento de permissões e roles do sistema. 
+                        <strong>Acesso restrito a administradores.</strong>
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle de permissões via AJAX
+    const toggleButtons = document.querySelectorAll('.toggle-permission, .toggle-permission-quick');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const permissionId = this.dataset.permissionId;
+            const currentStatus = this.dataset.currentStatus === 'true';
+            
+            // Desabilitar botão durante a requisição
+            this.disabled = true;
+            
+            fetch(`{% url 'permissions:toggle_permission' '0' %}`.replace('0', permissionId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Recarregar a página para atualizar todas as informações
+                    location.reload();
+                } else {
+                    alert('Erro: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Erro ao alterar permissão: ' + error.message);
+            })
+            .finally(() => {
+                this.disabled = false;
+            });
+        });
+    });
+});
+</script>
+
+<!-- Token CSRF para AJAX -->
+{% csrf_token %}
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+}
+</style>
+{% endblock %} 

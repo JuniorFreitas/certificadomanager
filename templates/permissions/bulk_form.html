@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - FCM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="bi bi-list-check"></i> {{ title }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Alertas informativos -->
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Concessão em Lote de Permissões</h6>
+                    <ul class="mb-0">
+                        <li><strong>Eficiência:</strong> Conceda ou revogue múltiplas permissões de uma só vez</li>
+                        <li><strong>Múltiplos usuários:</strong> Selecione vários usuários para receber as mesmas permissões</li>
+                        <li><strong>Múltiplas permissões:</strong> Selecione várias permissões para aplicar aos usuários</li>
+                        <li><strong>Segurança:</strong> Operação atômica - todas as permissões são aplicadas ou nenhuma</li>
+                    </ul>
+                </div>
+
+                <!-- Formulário -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Seleção de Usuários -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="bi bi-people"></i> Selecionar Usuários</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAllUsers">
+                                            <label class="form-check-label" for="selectAllUsers">
+                                                <strong>Selecionar todos os usuários</strong>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <input type="text" class="form-control" id="searchUsers" 
+                                               placeholder="Buscar usuários...">
+                                    </div>
+                                    
+                                    <div style="max-height: 300px; overflow-y: auto;">
+                                        {{ form.users }}
+                                    </div>
+                                    
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <span id="selectedUsersCount">0</span> usuário(s) selecionado(s)
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Seleção de Permissões -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="bi bi-key"></i> Selecionar Permissões</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAllPermissions">
+                                            <label class="form-check-label" for="selectAllPermissions">
+                                                <strong>Selecionar todas as permissões</strong>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Filtros por módulo -->
+                                    <div class="mb-3">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-primary module-filter" data-module="users">
+                                                <i class="bi bi-people"></i> Usuários
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success module-filter" data-module="certificates">
+                                                <i class="bi bi-file-earmark-lock"></i> Certificados
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info module-filter" data-module="accounts">
+                                                <i class="bi bi-cloud"></i> Contas
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary module-filter" data-module="resources">
+                                                <i class="bi bi-server"></i> Recursos
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning module-filter" data-module="permissions">
+                                                <i class="bi bi-key"></i> Permissões
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="max-height: 300px; overflow-y: auto;">
+                                        {{ form.permissions }}
+                                    </div>
+                                    
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <span id="selectedPermissionsCount">0</span> permissão(ões) selecionada(s)
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Opções de Aplicação -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="bi bi-gear"></i> Opções de Aplicação</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        {{ form.granted }}
+                                        <label class="form-check-label" for="{{ form.granted.id_for_label }}">
+                                            <strong>{{ form.granted.label }}</strong>
+                                        </label>
+                                        <div class="form-text">{{ form.granted.help_text }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-warning" role="alert">
+                                        <small>
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            <strong>Atenção:</strong> Permissões existentes serão atualizadas com o novo status.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Resumo da Operação -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="bi bi-clipboard-check"></i> Resumo da Operação</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="operationSummary" class="text-muted">
+                                Selecione usuários e permissões para ver o resumo da operação.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botões de Ação -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'permissions:list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        
+                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                            <i class="bi bi-check-circle"></i> Aplicar Permissões
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const usersCheckboxes = document.querySelectorAll('input[name="users"]');
+    const permissionsCheckboxes = document.querySelectorAll('input[name="permissions"]');
+    const selectAllUsers = document.getElementById('selectAllUsers');
+    const selectAllPermissions = document.getElementById('selectAllPermissions');
+    const searchUsers = document.getElementById('searchUsers');
+    const grantedSwitch = document.querySelector('input[name="granted"]');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Contadores
+    function updateCounts() {
+        const selectedUsers = document.querySelectorAll('input[name="users"]:checked').length;
+        const selectedPermissions = document.querySelectorAll('input[name="permissions"]:checked').length;
+        
+        document.getElementById('selectedUsersCount').textContent = selectedUsers;
+        document.getElementById('selectedPermissionsCount').textContent = selectedPermissions;
+        
+        // Atualizar resumo
+        updateSummary(selectedUsers, selectedPermissions);
+        
+        // Habilitar/desabilitar botão submit
+        submitBtn.disabled = selectedUsers === 0 || selectedPermissions === 0;
+    }
+    
+    // Atualizar resumo da operação
+    function updateSummary(userCount, permissionCount) {
+        const granted = grantedSwitch.checked;
+        const action = granted ? 'concedidas' : 'revogadas';
+        const totalOperations = userCount * permissionCount;
+        
+        const summaryDiv = document.getElementById('operationSummary');
+        
+        if (userCount > 0 && permissionCount > 0) {
+            summaryDiv.innerHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>Usuários:</strong> ${userCount}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Permissões:</strong> ${permissionCount}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Total de operações:</strong> ${totalOperations}
+                    </div>
+                </div>
+                <hr>
+                <p class="mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>${permissionCount}</strong> permissão(ões) serão <strong>${action}</strong> 
+                    para <strong>${userCount}</strong> usuário(s), totalizando <strong>${totalOperations}</strong> operação(ões).
+                </p>
+            `;
+            summaryDiv.className = granted ? 'text-success' : 'text-warning';
+        } else {
+            summaryDiv.innerHTML = 'Selecione usuários e permissões para ver o resumo da operação.';
+            summaryDiv.className = 'text-muted';
+        }
+    }
+    
+    // Selecionar todos os usuários
+    selectAllUsers.addEventListener('change', function() {
+        usersCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateCounts();
+    });
+    
+    // Selecionar todas as permissões
+    selectAllPermissions.addEventListener('change', function() {
+        permissionsCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateCounts();
+    });
+    
+    // Busca de usuários
+    searchUsers.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const userLabels = document.querySelectorAll('label[for^="id_users_"]');
+        
+        userLabels.forEach(label => {
+            const text = label.textContent.toLowerCase();
+            const container = label.closest('div');
+            
+            if (text.includes(searchTerm)) {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        });
+    });
+    
+    // Filtros por módulo
+    const moduleFilters = document.querySelectorAll('.module-filter');
+    moduleFilters.forEach(filter => {
+        filter.addEventListener('click', function() {
+            const module = this.dataset.module;
+            
+            // Toggle ativo
+            this.classList.toggle('active');
+            
+            // Filtrar permissões
+            const permissionLabels = document.querySelectorAll('label[for^="id_permissions_"]');
+            permissionLabels.forEach(label => {
+                const text = label.textContent.toLowerCase();
+                const container = label.closest('div');
+                const checkbox = container.querySelector('input');
+                
+                if (text.includes(module)) {
+                    checkbox.checked = this.classList.contains('active');
+                }
+            });
+            
+            updateCounts();
+        });
+    });
+    
+    // Listeners para checkboxes individuais
+    usersCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateCounts);
+    });
+    
+    permissionsCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateCounts);
+    });
+    
+    // Listener para switch de concessão
+    grantedSwitch.addEventListener('change', function() {
+        updateCounts();
+    });
+    
+    // Confirmação antes do submit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const selectedUsers = document.querySelectorAll('input[name="users"]:checked').length;
+        const selectedPermissions = document.querySelectorAll('input[name="permissions"]:checked').length;
+        const granted = grantedSwitch.checked;
+        const action = granted ? 'conceder' : 'revogar';
+        const totalOperations = selectedUsers * selectedPermissions;
+        
+        const message = `Confirma ${action} ${selectedPermissions} permissão(ões) para ${selectedUsers} usuário(s)?\n\nTotal de ${totalOperations} operação(ões) serão realizadas.`;
+        
+        if (!confirm(message)) {
+            e.preventDefault();
+        }
+    });
+    
+    // Inicializar contadores
+    updateCounts();
+});
+</script>
+
+<style>
+.module-filter.active {
+    background-color: var(--bs-primary);
+    color: white;
+    border-color: var(--bs-primary);
+}
+
+.form-check {
+    margin-bottom: 0.5rem;
+}
+
+.form-check-input:checked + .form-check-label {
+    font-weight: 500;
+}
+</style>
+{% endblock %} 

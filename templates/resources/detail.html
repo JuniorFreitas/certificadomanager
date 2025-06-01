@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ resource.nome }} - FCM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi {{ resource.tipo_icon }}"></i> {{ resource.nome }}
+        <span class="badge {{ resource.status_badge_class }} ms-2">{{ resource.get_status_display }}</span>
+    </h1>
+    <div class="btn-group" role="group">
+        <a href="{% url 'resources:edit' resource.id %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        <button type="button" class="btn btn-outline-success" id="testConnectionBtn">
+            <i class="bi bi-wifi"></i> Testar Conexão
+        </button>
+        <a href="{% url 'resources:delete' resource.id %}" class="btn btn-outline-danger">
+            <i class="bi bi-trash"></i> Excluir
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informações Básicas -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações Básicas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Nome:</dt>
+                            <dd class="col-sm-8">{{ resource.nome }}</dd>
+                            
+                            <dt class="col-sm-4">Tipo:</dt>
+                            <dd class="col-sm-8">
+                                <i class="bi {{ resource.tipo_icon }} text-primary"></i>
+                                {{ resource.get_tipo_display }}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge {{ resource.status_badge_class }}">
+                                    {{ resource.get_status_display }}
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-4">URL:</dt>
+                            <dd class="col-sm-8">
+                                <a href="{{ resource.url }}" target="_blank" class="text-decoration-none">
+                                    {{ resource.url }}
+                                    <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                </a>
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Conta Cloud:</dt>
+                            <dd class="col-sm-8">
+                                <a href="{% url 'accounts:detail' resource.account.id %}" class="text-decoration-none">
+                                    <span class="badge bg-info">{{ resource.account.nome }}</span>
+                                </a>
+                            </dd>
+                            
+                            <dt class="col-sm-4">ID da Conta:</dt>
+                            <dd class="col-sm-8">
+                                <code>{{ resource.account.id_conta }}</code>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Criado em:</dt>
+                            <dd class="col-sm-8">{{ resource.data_cad|date:"d/m/Y H:i" }}</dd>
+                            
+                            <dt class="col-sm-4">Criado por:</dt>
+                            <dd class="col-sm-8">{{ resource.usu_cad }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                {% if resource.descricao %}
+                <hr>
+                <h6>Descrição:</h6>
+                <p class="text-muted">{{ resource.descricao }}</p>
+                {% endif %}
+                
+                {% if resource.data_atu %}
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>Última atualização:</strong> {{ resource.data_atu|date:"d/m/Y H:i" }}
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>Atualizado por:</strong> {{ resource.usu_atu }}
+                        </small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Informações AWS -->
+        {% if aws_info %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-cloud"></i> Informações AWS</h5>
+            </div>
+            <div class="card-body">
+                {% if aws_info.error %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Erro ao obter informações AWS: {{ aws_info.error }}
+                    </div>
+                {% else %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Conta AWS:</dt>
+                                <dd class="col-sm-8"><code>{{ aws_info.account_id }}</code></dd>
+                                
+                                <dt class="col-sm-4">Região:</dt>
+                                <dd class="col-sm-8">{{ aws_info.region }}</dd>
+                                
+                                <dt class="col-sm-4">Serviço:</dt>
+                                <dd class="col-sm-8">{{ aws_info.service|default:"N/A" }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Status AWS:</dt>
+                                <dd class="col-sm-8">
+                                    {% if aws_info.status == 'accessible' %}
+                                        <span class="badge bg-success">Acessível</span>
+                                    {% elif aws_info.status == 'not_found' %}
+                                        <span class="badge bg-warning">Não encontrado</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ aws_info.status|title }}</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                {% if aws_info.bucket_name %}
+                                <dt class="col-sm-4">Bucket S3:</dt>
+                                <dd class="col-sm-8"><code>{{ aws_info.bucket_name }}</code></dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ resource.url }}" target="_blank" class="btn btn-outline-primary">
+                        <i class="bi bi-box-arrow-up-right"></i> Acessar Recurso
+                    </a>
+                    
+                    <a href="{% url 'accounts:detail' resource.account.id %}" class="btn btn-outline-info">
+                        <i class="bi bi-cloud"></i> Ver Conta Cloud
+                    </a>
+                    
+                    <button type="button" class="btn btn-outline-success" id="testConnectionBtn2">
+                        <i class="bi bi-wifi"></i> Testar Conectividade
+                    </button>
+                    
+                    <hr>
+                    
+                    <a href="{% url 'resources:edit' resource.id %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Editar Recurso
+                    </a>
+                    
+                    <a href="{% url 'resources:list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar à Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recursos Relacionados -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Recursos Relacionados</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">
+                    Outros recursos na mesma conta cloud:
+                </p>
+                <!-- Aqui poderia listar outros recursos da mesma conta -->
+                <div class="text-center">
+                    <a href="{% url 'resources:list' %}?account={{ resource.account.id }}" class="btn btn-sm btn-outline-primary">
+                        Ver Todos da Conta
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para resultado do teste de conexão -->
+<div class="modal fade" id="connectionTestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Teste de Conectividade</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="connectionTestResult">
+                <!-- Resultado será inserido aqui via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const testButtons = document.querySelectorAll('#testConnectionBtn, #testConnectionBtn2');
+    const modal = new bootstrap.Modal(document.getElementById('connectionTestModal'));
+    const resultDiv = document.getElementById('connectionTestResult');
+    
+    testButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Mostrar loading
+            resultDiv.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Testando...</span>
+                    </div>
+                    <p class="mt-2">Testando conectividade...</p>
+                </div>
+            `;
+            modal.show();
+            
+            // Fazer requisição AJAX
+            fetch('{% url "resources:test_connection" resource.id %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <h6><i class="bi bi-check-circle"></i> ${data.message}</h6>
+                            <hr>
+                            <h6>Detalhes:</h6>
+                            <ul class="mb-0">
+                                <li><strong>Conta AWS:</strong> ${data.details.account_id}</li>
+                                <li><strong>Tipo de Recurso:</strong> ${data.details.resource_type}</li>
+                                <li><strong>URL:</strong> ${data.details.resource_url}</li>
+                                ${data.details.s3_status ? `<li><strong>Status S3:</strong> ${data.details.s3_status}</li>` : ''}
+                            </ul>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h6><i class="bi bi-x-circle"></i> Erro no Teste</h6>
+                            <p class="mb-0">${data.message}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6><i class="bi bi-x-circle"></i> Erro de Conexão</h6>
+                        <p class="mb-0">Erro ao realizar o teste: ${error.message}</p>
+                    </div>
+                `;
+            });
+        });
+    });
+});
+</script>
+
+<!-- Token CSRF para AJAX -->
+{% csrf_token %}
+{% endblock %} 

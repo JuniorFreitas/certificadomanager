@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Usuário - FCM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+                </div>
+                
+                <p>Você tem certeza que deseja excluir o usuário:</p>
+                
+                <div class="bg-light p-3 rounded mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-person-circle display-4 text-primary me-3"></i>
+                        <div>
+                            <strong>Nome:</strong> {{ user.nome }}<br>
+                            <strong>Email:</strong> {{ user.email }}<br>
+                            <strong>Status:</strong> 
+                            {% if user.status == 0 %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inativo</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if user.is_superuser %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-shield-exclamation"></i>
+                    <strong>Cuidado!</strong> Este é um superusuário com privilégios administrativos.
+                </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'users:detail' user.id %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Confirmar Exclusão
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

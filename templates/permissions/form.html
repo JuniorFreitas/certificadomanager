@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load crispy_forms_tags %}
 
-{% block title %}Criar Permissão - FCM{% endblock %}
+{% block title %}{{ title }} - FCM{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -8,18 +9,195 @@
         <div class="card">
             <div class="card-header">
                 <h3 class="mb-0">
-                    <i class="bi bi-key"></i> Criar Permissão
+                    <i class="bi bi-key"></i> {{ title }}
                 </h3>
             </div>
             <div class="card-body">
-                <div class="text-center py-5">
-                    <i class="bi bi-key display-1 text-muted"></i>
-                    <h3 class="mt-3">Em desenvolvimento</h3>
-                    <p class="text-muted">Formulário de permissões será implementado em breve.</p>
-                    <a href="{% url 'permissions:list' %}" class="btn btn-secondary">Voltar</a>
+                <!-- Alertas informativos -->
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Informações sobre Permissões</h6>
+                    <ul class="mb-0">
+                        <li><strong>Permissões granulares:</strong> Cada permissão controla uma ação específica</li>
+                        <li><strong>Usuários ativos:</strong> Apenas usuários com status ativo podem receber permissões</li>
+                        <li><strong>Unicidade:</strong> Cada usuário pode ter apenas uma permissão por tipo</li>
+                        <li><strong>Status:</strong> Permissões podem ser concedidas ou revogadas</li>
+                    </ul>
+                </div>
+
+                <!-- Formulário -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+
+        <!-- Guia de permissões -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-question-circle"></i> Guia de Permissões por Módulo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-people text-primary"></i> Usuários</h6>
+                        <ul class="small text-muted">
+                            <li><strong>Criar:</strong> Cadastrar novos usuários</li>
+                            <li><strong>Editar:</strong> Modificar dados de usuários</li>
+                            <li><strong>Excluir:</strong> Remover usuários do sistema</li>
+                            <li><strong>Visualizar:</strong> Acessar lista e detalhes</li>
+                        </ul>
+                        
+                        <h6><i class="bi bi-file-earmark-lock text-success"></i> Certificados</h6>
+                        <ul class="small text-muted">
+                            <li><strong>Criar:</strong> Cadastrar novos certificados</li>
+                            <li><strong>Editar:</strong> Modificar dados de certificados</li>
+                            <li><strong>Excluir:</strong> Remover certificados</li>
+                            <li><strong>Visualizar:</strong> Acessar e baixar certificados</li>
+                        </ul>
+                        
+                        <h6><i class="bi bi-cloud text-info"></i> Contas Cloud</h6>
+                        <ul class="small text-muted">
+                            <li><strong>Criar:</strong> Cadastrar contas AWS</li>
+                            <li><strong>Editar:</strong> Modificar credenciais</li>
+                            <li><strong>Excluir:</strong> Remover contas</li>
+                            <li><strong>Visualizar:</strong> Acessar informações AWS</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-server text-secondary"></i> Recursos</h6>
+                        <ul class="small text-muted">
+                            <li><strong>Criar:</strong> Cadastrar recursos cloud</li>
+                            <li><strong>Editar:</strong> Modificar configurações</li>
+                            <li><strong>Excluir:</strong> Remover recursos</li>
+                            <li><strong>Visualizar:</strong> Acessar informações</li>
+                        </ul>
+                        
+                        <h6><i class="bi bi-key text-warning"></i> Permissões</h6>
+                        <ul class="small text-muted">
+                            <li><strong>Criar:</strong> Conceder permissões</li>
+                            <li><strong>Editar:</strong> Modificar permissões</li>
+                            <li><strong>Excluir:</strong> Revogar permissões</li>
+                            <li><strong>Visualizar:</strong> Consultar permissões</li>
+                        </ul>
+                        
+                        <div class="alert alert-warning mt-3" role="alert">
+                            <small>
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Atenção:</strong> Permissões de "Permissões" devem ser concedidas apenas a administradores.
+                            </small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Permissões existentes do usuário (se editando) -->
+        {% if permission %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Outras Permissões do Usuário</h5>
+            </div>
+            <div class="card-body">
+                <div id="userPermissions">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="mt-2">Carregando permissões...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if permission %}
+    // Carregar permissões do usuário via AJAX
+    const userId = '{{ permission.user.id }}';
+    
+    fetch(`{% url 'permissions:get_user_permissions' '0' %}`.replace('0', userId))
+    .then(response => response.json())
+    .then(data => {
+        const container = document.getElementById('userPermissions');
+        
+        if (data.success && data.permissions.length > 0) {
+            let html = '<div class="row">';
+            
+            // Agrupar por módulo
+            const modules = {};
+            data.permissions.forEach(perm => {
+                if (!modules[perm.module]) {
+                    modules[perm.module] = [];
+                }
+                modules[perm.module].push(perm);
+            });
+            
+            Object.keys(modules).forEach(module => {
+                html += `<div class="col-md-6 mb-3">`;
+                html += `<h6 class="text-primary">${module}</h6>`;
+                html += `<div class="list-group list-group-flush">`;
+                
+                modules[module].forEach(perm => {
+                    const badgeClass = perm.granted ? 'bg-success' : 'bg-danger';
+                    const icon = perm.granted ? 'bi-check-circle' : 'bi-x-circle';
+                    const status = perm.granted ? 'Concedida' : 'Revogada';
+                    
+                    html += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span>${perm.type_display}</span>
+                            <span class="badge ${badgeClass}">
+                                <i class="bi ${icon}"></i> ${status}
+                            </span>
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    <p class="mt-2">Este usuário não possui outras permissões.</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        document.getElementById('userPermissions').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+                Erro ao carregar permissões: ${error.message}
+            </div>
+        `;
+    });
+    {% endif %}
+    
+    // Validação em tempo real
+    const userField = document.querySelector('#id_user');
+    const permissionTypeField = document.querySelector('#id_permission_type');
+    
+    if (userField && permissionTypeField) {
+        function validateCombination() {
+            const userId = userField.value;
+            const permissionType = permissionTypeField.value;
+            
+            if (userId && permissionType) {
+                // Aqui poderia fazer uma validação AJAX para verificar duplicatas
+                // Por enquanto, a validação é feita no backend
+            }
+        }
+        
+        userField.addEventListener('change', validateCombination);
+        permissionTypeField.addEventListener('change', validateCombination);
+    }
+});
+</script>
 {% endblock %} 

@@ -1,25 +1,152 @@
 {% extends 'base.html' %}
+{% load crispy_forms_tags %}
 
-{% block title %}Criar Conta - FCM{% endblock %}
+{% block title %}{{ title }} - FCM{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-10">
         <div class="card">
             <div class="card-header">
                 <h3 class="mb-0">
-                    <i class="bi bi-cloud"></i> Criar Conta
+                    <i class="bi bi-cloud"></i> {{ title }}
                 </h3>
             </div>
             <div class="card-body">
-                <div class="text-center py-5">
-                    <i class="bi bi-cloud display-1 text-muted"></i>
-                    <h3 class="mt-3">Em desenvolvimento</h3>
-                    <p class="text-muted">Formulário de contas será implementado em breve.</p>
-                    <a href="{% url 'accounts:list' %}" class="btn btn-secondary">Voltar</a>
+                <!-- Alertas informativos -->
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Informações Importantes</h6>
+                    <ul class="mb-0">
+                        <li><strong>Segurança:</strong> As credenciais AWS são criptografadas antes de serem armazenadas</li>
+                        <li><strong>Validação:</strong> Use o teste de conexão para verificar se as credenciais estão corretas</li>
+                        <li><strong>Permissões:</strong> Certifique-se de que a conta AWS tem as permissões necessárias</li>
+                        <li><strong>Regiões:</strong> Selecione as regiões onde a conta pode operar</li>
+                    </ul>
                 </div>
+
+                <!-- Formulário -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Botão Voltar -->
+<div class="row mt-3">
+    <div class="col-12">
+        <a href="{% if account %}{% url 'accounts:detail' account.id %}{% else %}{% url 'accounts:list' %}{% endif %}" 
+           class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> 
+            {% if account %}Voltar aos Detalhes{% else %}Voltar à Lista{% endif %}
+        </a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Função para testar conexão
+    const testConnectionBtn = document.getElementById('id_test_connection');
+    if (testConnectionBtn) {
+        testConnectionBtn.addEventListener('change', function() {
+            if (this.checked) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning mt-2';
+                alert.innerHTML = '<i class="bi bi-exclamation-triangle"></i> <strong>Atenção:</strong> O teste de conexão será executado ao salvar o formulário.';
+                this.closest('.form-group').appendChild(alert);
+            } else {
+                const alert = this.closest('.form-group').querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }
+        });
+    }
+
+    // Validação de Account ID
+    const accountIdField = document.getElementById('id_account_id');
+    if (accountIdField) {
+        accountIdField.addEventListener('input', function() {
+            const value = this.value;
+            const isValid = /^\d{12}$/.test(value);
+            
+            if (value && !isValid) {
+                this.classList.add('is-invalid');
+                let feedback = this.parentNode.querySelector('.invalid-feedback');
+                if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    this.parentNode.appendChild(feedback);
+                }
+                feedback.textContent = 'Account ID deve ter exatamente 12 dígitos';
+            } else {
+                this.classList.remove('is-invalid');
+                const feedback = this.parentNode.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.remove();
+                }
+            }
+        });
+    }
+
+    // Validação de Access Key ID
+    const accessKeyField = document.getElementById('id_access_key_id');
+    if (accessKeyField) {
+        accessKeyField.addEventListener('input', function() {
+            const value = this.value;
+            const isValid = /^AKIA[0-9A-Z]{16}$/.test(value);
+            
+            if (value && !isValid) {
+                this.classList.add('is-invalid');
+                let feedback = this.parentNode.querySelector('.invalid-feedback');
+                if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    this.parentNode.appendChild(feedback);
+                }
+                feedback.textContent = 'Access Key ID deve começar com AKIA seguido de 16 caracteres alfanuméricos';
+            } else {
+                this.classList.remove('is-invalid');
+                const feedback = this.parentNode.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.remove();
+                }
+            }
+        });
+    }
+
+    // Validação de confirmação de secret
+    const secretField = document.getElementById('id_secret_access_key');
+    const confirmSecretField = document.getElementById('id_confirm_secret');
+    
+    if (secretField && confirmSecretField) {
+        function validateSecretMatch() {
+            const secret = secretField.value;
+            const confirmSecret = confirmSecretField.value;
+            
+            if (confirmSecret && secret !== confirmSecret) {
+                confirmSecretField.classList.add('is-invalid');
+                let feedback = confirmSecretField.parentNode.querySelector('.invalid-feedback');
+                if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    confirmSecretField.parentNode.appendChild(feedback);
+                }
+                feedback.textContent = 'Os secrets não coincidem';
+            } else {
+                confirmSecretField.classList.remove('is-invalid');
+                const feedback = confirmSecretField.parentNode.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.remove();
+                }
+            }
+        }
+        
+        secretField.addEventListener('input', validateSecretMatch);
+        confirmSecretField.addEventListener('input', validateSecretMatch);
+    }
+});
+</script>
 {% endblock %} 

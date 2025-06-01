@@ -16,10 +16,24 @@ class Resource(models.Model):
         (6, 'Lambda'),
     ]
     
+    STATUS_CHOICES = [
+        (0, 'Ativo'),
+        (1, 'Inativo'),
+        (2, 'Em Manutenção'),
+    ]
+    
     id = models.CharField(max_length=255, primary_key=True)
     nome = models.CharField(max_length=255, verbose_name='Nome do Recurso')
     tipo = models.IntegerField(choices=RESOURCE_TYPE_CHOICES, verbose_name='Tipo do Recurso')
     url = models.URLField(verbose_name='URL do Recurso')
+    account = models.ForeignKey(
+        'accounts.Account', 
+        on_delete=models.CASCADE, 
+        verbose_name='Conta Cloud',
+        help_text='Conta cloud onde o recurso está hospedado'
+    )
+    status = models.IntegerField(choices=STATUS_CHOICES, default=0, verbose_name='Status')
+    descricao = models.TextField(blank=True, null=True, verbose_name='Descrição')
     data_cad = models.DateTimeField(default=timezone.now, verbose_name='Data de Cadastro')
     usu_cad = models.CharField(max_length=255, verbose_name='Usuário de Cadastro')
     data_atu = models.DateTimeField(null=True, blank=True, verbose_name='Data de Atualização')
@@ -29,6 +43,7 @@ class Resource(models.Model):
         db_table = 'resources'
         verbose_name = 'Recurso'
         verbose_name_plural = 'Recursos'
+        ordering = ['-data_cad']
         
     def __str__(self):
         return f"{self.nome} ({self.get_tipo_display()})"
@@ -39,3 +54,27 @@ class Resource(models.Model):
             import uuid
             self.id = str(uuid.uuid4())
         super().save(*args, **kwargs)
+    
+    @property
+    def status_badge_class(self):
+        """Retorna a classe CSS para o badge de status"""
+        status_classes = {
+            0: 'bg-success',  # Ativo
+            1: 'bg-secondary',  # Inativo
+            2: 'bg-warning',  # Em Manutenção
+        }
+        return status_classes.get(self.status, 'bg-secondary')
+    
+    @property
+    def tipo_icon(self):
+        """Retorna o ícone Bootstrap para o tipo de recurso"""
+        tipo_icons = {
+            0: 'bi-bucket',  # S3
+            1: 'bi-diagram-3',  # Load Balancer
+            2: 'bi-cloud',  # CloudFront
+            3: 'bi-api',  # API Gateway
+            4: 'bi-server',  # EC2
+            5: 'bi-database',  # RDS
+            6: 'bi-lightning',  # Lambda
+        }
+        return tipo_icons.get(self.tipo, 'bi-server')

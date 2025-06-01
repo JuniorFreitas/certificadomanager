@@ -72,8 +72,32 @@
                             <i class="bi bi-key"></i> Permissões
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'permissions:list' %}">Listar</a></li>
-                            <li><a class="dropdown-item" href="{% url 'permissions:create' %}">Criar</a></li>
+                            <li><h6 class="dropdown-header">Permissões</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'permissions:list' %}">
+                                <i class="bi bi-key"></i> Listar Permissões
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'permissions:create' %}">
+                                <i class="bi bi-plus-circle"></i> Criar Permissão
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'permissions:bulk' %}">
+                                <i class="bi bi-list-check"></i> Concessão em Lote
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Roles</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'permissions:role_list' %}">
+                                <i class="bi bi-shield"></i> Listar Roles
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'permissions:role_create' %}">
+                                <i class="bi bi-plus-circle"></i> Criar Role
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Associações</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'permissions:user_role_list' %}">
+                                <i class="bi bi-person-gear"></i> Usuário-Role
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'permissions:user_role_create' %}">
+                                <i class="bi bi-plus-circle"></i> Associar Usuário
+                            </a></li>
                         </ul>
                     </li>
                 </ul>

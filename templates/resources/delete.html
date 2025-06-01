@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir {{ resource.nome }} - FCM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Alerta de aviso -->
+                <div class="alert alert-danger" role="alert">
+                    <h5 class="alert-heading"><i class="bi bi-shield-exclamation"></i> Atenção!</h5>
+                    <p>Você está prestes a excluir permanentemente o recurso:</p>
+                    <hr>
+                    <h6 class="mb-0">
+                        <i class="bi {{ resource.tipo_icon }}"></i> 
+                        <strong>{{ resource.nome }}</strong> ({{ resource.get_tipo_display }})
+                    </h6>
+                </div>
+
+                <!-- Informações do recurso -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Informações do Recurso</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Nome:</dt>
+                                    <dd class="col-sm-8">{{ resource.nome }}</dd>
+                                    
+                                    <dt class="col-sm-4">Tipo:</dt>
+                                    <dd class="col-sm-8">
+                                        <i class="bi {{ resource.tipo_icon }} text-primary"></i>
+                                        {{ resource.get_tipo_display }}
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4">Status:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge {{ resource.status_badge_class }}">
+                                            {{ resource.get_status_display }}
+                                        </span>
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">URL:</dt>
+                                    <dd class="col-sm-8">
+                                        <a href="{{ resource.url }}" target="_blank" class="text-decoration-none">
+                                            {{ resource.url|truncatechars:40 }}
+                                            <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                        </a>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4">Conta Cloud:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge bg-info">{{ resource.account.nome }}</span>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4">Criado em:</dt>
+                                    <dd class="col-sm-8">{{ resource.data_cad|date:"d/m/Y H:i" }}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                        
+                        {% if resource.descricao %}
+                        <hr>
+                        <h6>Descrição:</h6>
+                        <p class="text-muted">{{ resource.descricao }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Avisos importantes -->
+                <div class="alert alert-warning" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Importante:</h6>
+                    <ul class="mb-0">
+                        <li><strong>Esta ação é irreversível</strong> - O recurso será removido permanentemente do sistema</li>
+                        <li><strong>Recurso AWS não será afetado</strong> - Esta exclusão remove apenas o registro do FCM</li>
+                        <li><strong>Histórico será perdido</strong> - Todas as informações de auditoria serão removidas</li>
+                        <li><strong>Certificados associados</strong> - Verifique se há certificados vinculados a este recurso</li>
+                    </ul>
+                </div>
+
+                <!-- Formulário de confirmação -->
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="confirmName" class="form-label">
+                            Para confirmar, digite o nome do recurso: <strong>{{ resource.nome }}</strong>
+                        </label>
+                        <input type="text" class="form-control" id="confirmName" 
+                               placeholder="Digite o nome exato do recurso" required>
+                        <div class="form-text">
+                            Esta verificação ajuda a prevenir exclusões acidentais.
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'resources:detail' resource.id %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        
+                        <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                            <i class="bi bi-trash"></i> Confirmar Exclusão
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Informações adicionais -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Alternativas</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Se você não deseja excluir permanentemente o recurso, considere estas alternativas:
+                </p>
+                <ul class="text-muted">
+                    <li><strong>Desativar:</strong> Altere o status para "Inativo" em vez de excluir</li>
+                    <li><strong>Editar:</strong> Atualize as informações se estiverem incorretas</li>
+                    <li><strong>Mover:</strong> Associe a uma conta cloud diferente se necessário</li>
+                </ul>
+                
+                <div class="d-flex gap-2">
+                    <a href="{% url 'resources:edit' resource.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar Recurso
+                    </a>
+                    <a href="{% url 'resources:list' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-list"></i> Ver Todos os Recursos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmName');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const expectedName = '{{ resource.nome }}';
+    
+    confirmInput.addEventListener('input', function() {
+        if (this.value.trim() === expectedName) {
+            deleteBtn.disabled = false;
+            deleteBtn.classList.remove('btn-danger');
+            deleteBtn.classList.add('btn-danger');
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+        } else {
+            deleteBtn.disabled = true;
+            this.classList.remove('is-valid');
+            if (this.value.trim() !== '') {
+                this.classList.add('is-invalid');
+            }
+        }
+    });
+    
+    // Confirmação adicional antes do submit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (!confirm('Tem certeza absoluta de que deseja excluir este recurso? Esta ação não pode ser desfeita.')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %} 

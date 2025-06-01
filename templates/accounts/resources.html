@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - FCM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-server"></i> {{ title }}
+    </h1>
+    <div class="btn-group" role="group">
+        <a href="{% url 'accounts:detail' account.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+        <a href="{% url 'accounts:resources' account.id %}?detailed=true" class="btn btn-outline-primary">
+            <i class="bi bi-list-ul"></i> Detalhes
+        </a>
+    </div>
+</div>
+
+<!-- Informações da conta -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-cloud"></i> Conta AWS</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Nome:</strong> {{ account.nome }}</p>
+                <p><strong>Account ID:</strong> <code>{{ account.account_id }}</code></p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Região Padrão:</strong> {{ account.get_default_region_display }}</p>
+                <p><strong>Status:</strong> 
+                    <span class="badge {{ account.status_badge_class }}">{{ account.status_display }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumo de Recursos -->
+{% if resource_summary %}
+    <div class="row mb-4">
+        {% for service, count in resource_summary.items %}
+            {% if service != 'error' %}
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0 text-primary">{{ count }}</h3>
+                            <p class="mb-0 text-muted">
+                                {% if service == 'ec2_instances' %}
+                                    <i class="bi bi-server"></i> Instâncias EC2
+                                {% elif service == 's3_buckets' %}
+                                    <i class="bi bi-bucket"></i> Buckets S3
+                                {% elif service == 'rds_instances' %}
+                                    <i class="bi bi-database"></i> Instâncias RDS
+                                {% elif service == 'lambda_functions' %}
+                                    <i class="bi bi-lightning"></i> Funções Lambda
+                                {% else %}
+                                    {{ service|title }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endif %}
+
+<!-- Detalhes dos Recursos -->
+{% if detailed_info %}
+    <!-- EC2 Instances -->
+    {% if detailed_info.ec2_instances %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-server"></i> Instâncias EC2</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Instance ID</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th>IP Privado</th>
+                                <th>IP Público</th>
+                                <th>Data de Criação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for instance in detailed_info.ec2_instances %}
+                                <tr>
+                                    <td><code>{{ instance.InstanceId }}</code></td>
+                                    <td>{{ instance.InstanceType }}</td>
+                                    <td>
+                                        <span class="badge {% if instance.State == 'running' %}bg-success{% elif instance.State == 'stopped' %}bg-secondary{% else %}bg-warning{% endif %}">
+                                            {{ instance.State }}
+                                        </span>
+                                    </td>
+                                    <td>{{ instance.PrivateIpAddress|default:"-" }}</td>
+                                    <td>{{ instance.PublicIpAddress|default:"-" }}</td>
+                                    <td>{{ instance.LaunchTime|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- S3 Buckets -->
+    {% if detailed_info.s3_buckets %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bucket"></i> Buckets S3</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Nome do Bucket</th>
+                                <th>Data de Criação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bucket in detailed_info.s3_buckets %}
+                                <tr>
+                                    <td><code>{{ bucket.Name }}</code></td>
+                                    <td>{{ bucket.CreationDate|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endif %}
+
+<!-- Erro -->
+{% if resource_summary.error %}
+    <div class="alert alert-danger" role="alert">
+        <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Erro ao Obter Recursos</h6>
+        <p class="mb-0">{{ resource_summary.error }}</p>
+    </div>
+{% endif %}
+
+<!-- Mensagem se não há recursos -->
+{% if not resource_summary %}
+    <div class="alert alert-info" role="alert">
+        <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Informação</h6>
+        <p class="mb-0">Não foi possível obter informações dos recursos. Verifique se a conta está validada e tem as permissões necessárias.</p>
+    </div>
+{% endif %}
+{% endblock %} 

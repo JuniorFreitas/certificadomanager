@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load crispy_forms_tags %}
 
-{% block title %}Criar Recurso - FCM{% endblock %}
+{% block title %}{{ title }} - FCM{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -8,18 +9,111 @@
         <div class="card">
             <div class="card-header">
                 <h3 class="mb-0">
-                    <i class="bi bi-server"></i> Criar Recurso
+                    <i class="bi bi-server"></i> {{ title }}
                 </h3>
             </div>
             <div class="card-body">
-                <div class="text-center py-5">
-                    <i class="bi bi-server display-1 text-muted"></i>
-                    <h3 class="mt-3">Em desenvolvimento</h3>
-                    <p class="text-muted">Formulário de recursos será implementado em breve.</p>
-                    <a href="{% url 'resources:list' %}" class="btn btn-secondary">Voltar</a>
+                <!-- Alertas informativos -->
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Informações Importantes</h6>
+                    <ul class="mb-0">
+                        <li>Certifique-se de que a conta cloud selecionada tem acesso ao recurso</li>
+                        <li>A URL deve ser acessível e válida</li>
+                        <li>Para recursos S3, use URLs no formato: https://bucket-name.s3.amazonaws.com</li>
+                        <li>Para CloudFront, use URLs no formato: https://d123456789.cloudfront.net</li>
+                    </ul>
+                </div>
+
+                <!-- Formulário -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+
+        <!-- Guia de tipos de recursos -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-question-circle"></i> Guia de Tipos de Recursos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-bucket text-primary"></i> S3</h6>
+                        <p class="small text-muted">Buckets de armazenamento de objetos</p>
+                        
+                        <h6><i class="bi bi-diagram-3 text-primary"></i> Load Balancer</h6>
+                        <p class="small text-muted">Balanceadores de carga para distribuição de tráfego</p>
+                        
+                        <h6><i class="bi bi-cloud text-primary"></i> CloudFront</h6>
+                        <p class="small text-muted">CDN para distribuição de conteúdo</p>
+                        
+                        <h6><i class="bi bi-api text-primary"></i> API Gateway</h6>
+                        <p class="small text-muted">Gateway para APIs REST e WebSocket</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-server text-primary"></i> EC2</h6>
+                        <p class="small text-muted">Instâncias de computação virtual</p>
+                        
+                        <h6><i class="bi bi-database text-primary"></i> RDS</h6>
+                        <p class="small text-muted">Bancos de dados relacionais gerenciados</p>
+                        
+                        <h6><i class="bi bi-lightning text-primary"></i> Lambda</h6>
+                        <p class="small text-muted">Funções serverless</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validação em tempo real da URL baseada no tipo
+    const tipoField = document.querySelector('#id_tipo');
+    const urlField = document.querySelector('#id_url');
+    
+    if (tipoField && urlField) {
+        tipoField.addEventListener('change', function() {
+            const tipo = parseInt(this.value);
+            const urlValue = urlField.value.toLowerCase();
+            
+            // Limpar validações anteriores
+            urlField.classList.remove('is-invalid');
+            const feedback = urlField.parentNode.querySelector('.invalid-feedback');
+            if (feedback) feedback.remove();
+            
+            // Validações específicas
+            let isValid = true;
+            let message = '';
+            
+            if (urlValue) {
+                switch(tipo) {
+                    case 0: // S3
+                        if (!urlValue.includes('s3')) {
+                            isValid = false;
+                            message = 'URL deve conter "s3" para recursos S3';
+                        }
+                        break;
+                    case 2: // CloudFront
+                        if (!urlValue.includes('cloudfront')) {
+                            isValid = false;
+                            message = 'URL deve conter "cloudfront" para recursos CloudFront';
+                        }
+                        break;
+                }
+                
+                if (!isValid) {
+                    urlField.classList.add('is-invalid');
+                    const feedbackDiv = document.createElement('div');
+                    feedbackDiv.className = 'invalid-feedback';
+                    feedbackDiv.textContent = message;
+                    urlField.parentNode.appendChild(feedbackDiv);
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %} 

@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Associação - FCM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão de Associação
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Alerta de aviso -->
+                <div class="alert alert-danger" role="alert">
+                    <h5 class="alert-heading"><i class="bi bi-person-gear"></i> Atenção!</h5>
+                    <p>Você está prestes a excluir permanentemente a associação:</p>
+                    <hr>
+                    <h6 class="mb-0">
+                        <strong>{{ user_role.user.nome }}</strong> 
+                        <i class="bi bi-arrow-right mx-2"></i>
+                        <span class="badge {{ user_role.role.badge_class }}">{{ user_role.role.get_name_display }}</span>
+                    </h6>
+                </div>
+
+                <!-- Informações da associação -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Informações da Associação</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="bi bi-person text-primary"></i> Usuário</h6>
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        {{ user_role.user.nome|first|upper }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ user_role.user.nome }}</strong>
+                                        <br><small class="text-muted">{{ user_role.user.email }}</small>
+                                    </div>
+                                </div>
+                                
+                                <dl class="row">
+                                    <dt class="col-sm-5">Status do usuário:</dt>
+                                    <dd class="col-sm-7">
+                                        {% if user_role.user.status == 0 %}
+                                            <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inativo</span>
+                                        {% endif %}
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="bi bi-shield text-warning"></i> Role</h6>
+                                <div class="mb-3">
+                                    <span class="badge {{ user_role.role.badge_class }} fs-6">
+                                        {{ user_role.role.get_name_display }}
+                                    </span>
+                                </div>
+                                
+                                <dl class="row">
+                                    <dt class="col-sm-5">Status da associação:</dt>
+                                    <dd class="col-sm-7">
+                                        {% if user_role.is_active %}
+                                            <span class="badge bg-success">Ativa</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inativa</span>
+                                        {% endif %}
+                                    </dd>
+                                    
+                                    <dt class="col-sm-5">Associado em:</dt>
+                                    <dd class="col-sm-7">{{ user_role.data_cad|date:"d/m/Y H:i" }}</dd>
+                                    
+                                    <dt class="col-sm-5">Associado por:</dt>
+                                    <dd class="col-sm-7">{{ user_role.usu_cad }}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Avisos importantes -->
+                <div class="alert alert-warning" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Importante:</h6>
+                    <ul class="mb-0">
+                        <li><strong>Esta ação é irreversível</strong> - A associação será removida permanentemente</li>
+                        <li><strong>Acesso será alterado</strong> - O usuário perderá os privilégios deste role</li>
+                        <li><strong>Histórico será perdido</strong> - Todas as informações de auditoria serão removidas</li>
+                        <li><strong>Impacto no sistema</strong> - Verifique se o usuário não depende deste role</li>
+                    </ul>
+                </div>
+
+                <!-- Informações sobre o role -->
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-shield-check"></i> Sobre o Role {{ user_role.role.get_name_display }}:</h6>
+                    {% if user_role.role.name == "admin" %}
+                        <p class="mb-0">
+                            <strong>Administrador:</strong> Role com acesso total ao sistema. 
+                            Remover este role significa que o usuário perderá privilégios administrativos.
+                        </p>
+                    {% elif user_role.role.name == "manager" %}
+                        <p class="mb-0">
+                            <strong>Gerente:</strong> Role de supervisão com acesso a relatórios gerenciais. 
+                            O usuário perderá acesso a funcionalidades de gestão.
+                        </p>
+                    {% elif user_role.role.name == "user" %}
+                        <p class="mb-0">
+                            <strong>Usuário:</strong> Role padrão para operações do dia a dia. 
+                            O usuário perderá acesso às funcionalidades operacionais básicas.
+                        </p>
+                    {% elif user_role.role.name == "viewer" %}
+                        <p class="mb-0">
+                            <strong>Visualizador:</strong> Role com acesso somente leitura. 
+                            O usuário perderá acesso de consulta às informações.
+                        </p>
+                    {% endif %}
+                </div>
+
+                <!-- Formulário de confirmação -->
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="confirmAssociation" class="form-label">
+                            Para confirmar, digite: <strong>{{ user_role.user.nome }} - {{ user_role.role.get_name_display }}</strong>
+                        </label>
+                        <input type="text" class="form-control" id="confirmAssociation" 
+                               placeholder="Digite o nome do usuário e role exatos" required>
+                        <div class="form-text">
+                            Esta verificação ajuda a prevenir exclusões acidentais.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmImpact" required>
+                            <label class="form-check-label" for="confirmImpact">
+                                Entendo que o usuário <strong>{{ user_role.user.nome }}</strong> perderá o role <strong>{{ user_role.role.get_name_display }}</strong>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'permissions:user_role_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        
+                        <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                            <i class="bi bi-trash"></i> Confirmar Exclusão
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Informações adicionais -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Alternativas</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Se você não deseja excluir permanentemente a associação, considere estas alternativas:
+                </p>
+                <ul class="text-muted">
+                    <li><strong>Desativar:</strong> Altere o status para "Inativa" em vez de excluir</li>
+                    <li><strong>Editar:</strong> Modifique o role ou status da associação</li>
+                    <li><strong>Trocar role:</strong> Crie uma nova associação com outro role</li>
+                </ul>
+                
+                <div class="d-flex gap-2">
+                    <a href="{% url 'permissions:user_role_edit' user_role.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar Associação
+                    </a>
+                    <a href="{% url 'users:detail' user_role.user.id %}" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-person"></i> Ver Usuário
+                    </a>
+                    <a href="{% url 'permissions:role_detail' user_role.role.id %}" class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-shield"></i> Ver Role
+                    </a>
+                    <a href="{% url 'permissions:user_role_list' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-list"></i> Ver Todas as Associações
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmAssociation');
+    const confirmImpactCheck = document.getElementById('confirmImpact');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const expectedText = '{{ user_role.user.nome }} - {{ user_role.role.get_name_display }}';
+    
+    function checkFormValidity() {
+        const textValid = confirmInput.value.trim() === expectedText;
+        const impactConfirmed = confirmImpactCheck.checked;
+        
+        if (textValid && impactConfirmed) {
+            deleteBtn.disabled = false;
+            confirmInput.classList.remove('is-invalid');
+            confirmInput.classList.add('is-valid');
+        } else {
+            deleteBtn.disabled = true;
+            if (confirmInput.value.trim() !== '' && !textValid) {
+                confirmInput.classList.add('is-invalid');
+                confirmInput.classList.remove('is-valid');
+            }
+        }
+    }
+    
+    confirmInput.addEventListener('input', checkFormValidity);
+    confirmImpactCheck.addEventListener('change', checkFormValidity);
+    
+    // Confirmação adicional antes do submit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const message = `Tem certeza absoluta de que deseja excluir esta associação?\n\nO usuário "${user_role.user.nome}" perderá o role "${user_role.role.get_name_display}".\n\nEsta ação não pode ser desfeita.`;
+        
+        if (!confirm(message)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+}
+</style>
+{% endblock %} 

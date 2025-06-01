@@ -5,18 +5,22 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
-    <small class="text-muted">Bem-vindo, {{ user.nome|default:user.email }}!</small>
+    <div class="text-muted">
+        <i class="bi bi-clock"></i> Última atualização: {{ "now"|date:"d/m/Y H:i" }}
+    </div>
 </div>
 
 <!-- Statistics Cards -->
 <div class="row mb-4">
+    <!-- Usuários -->
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="card bg-primary text-white">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="mb-0">{{ total_users }}</h4>
+                        <h4 class="mb-0">{{ user_stats.total }}</h4>
                         <p class="mb-0">Usuários</p>
+                        <small>{{ user_stats.active }} ativos</small>
                     </div>
                     <div class="align-self-center">
                         <i class="bi bi-people display-4"></i>
@@ -25,19 +29,21 @@
             </div>
             <div class="card-footer">
                 <a href="{% url 'users:list' %}" class="text-white text-decoration-none">
-                    Ver todos <i class="bi bi-arrow-right"></i>
+                    <i class="bi bi-arrow-right"></i> Ver todos
                 </a>
             </div>
         </div>
     </div>
     
+    <!-- Certificados -->
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="card bg-success text-white">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="mb-0">{{ total_certificates }}</h4>
+                        <h4 class="mb-0">{{ cert_stats.total }}</h4>
                         <p class="mb-0">Certificados</p>
+                        <small>{{ cert_stats.active }} ativos</small>
                     </div>
                     <div class="align-self-center">
                         <i class="bi bi-file-earmark-lock display-4"></i>
@@ -46,19 +52,21 @@
             </div>
             <div class="card-footer">
                 <a href="{% url 'certificates:list' %}" class="text-white text-decoration-none">
-                    Ver todos <i class="bi bi-arrow-right"></i>
+                    <i class="bi bi-arrow-right"></i> Ver todos
                 </a>
             </div>
         </div>
     </div>
     
+    <!-- Contas Cloud -->
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="card bg-info text-white">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="mb-0">{{ total_accounts }}</h4>
+                        <h4 class="mb-0">{{ account_stats.total }}</h4>
                         <p class="mb-0">Contas Cloud</p>
+                        <small>{{ account_stats.active }} ativas</small>
                     </div>
                     <div class="align-self-center">
                         <i class="bi bi-cloud display-4"></i>
@@ -67,19 +75,21 @@
             </div>
             <div class="card-footer">
                 <a href="{% url 'accounts:list' %}" class="text-white text-decoration-none">
-                    Ver todas <i class="bi bi-arrow-right"></i>
+                    <i class="bi bi-arrow-right"></i> Ver todas
                 </a>
             </div>
         </div>
     </div>
     
+    <!-- Recursos -->
     <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card bg-warning text-white">
+        <div class="card bg-secondary text-white">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="mb-0">{{ total_resources }}</h4>
+                        <h4 class="mb-0">{{ resource_stats.total }}</h4>
                         <p class="mb-0">Recursos</p>
+                        <small>{{ resource_stats.active }} ativos</small>
                     </div>
                     <div class="align-self-center">
                         <i class="bi bi-server display-4"></i>
@@ -88,84 +98,235 @@
             </div>
             <div class="card-footer">
                 <a href="{% url 'resources:list' %}" class="text-white text-decoration-none">
-                    Ver todos <i class="bi bi-arrow-right"></i>
+                    <i class="bi bi-arrow-right"></i> Ver todos
                 </a>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Certificate Status -->
+<!-- Quick Actions -->
 <div class="row mb-4">
-    <div class="col-md-6">
+    <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-check-circle"></i> Certificados Ativos</h5>
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Ações Rápidas</h5>
             </div>
-            <div class="card-body text-center">
-                <h2 class="text-success">{{ active_certificates }}</h2>
-                <p class="text-muted">Certificados em uso</p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Certificados Expirados</h5>
-            </div>
-            <div class="card-body text-center">
-                <h2 class="text-danger">{{ expired_certificates }}</h2>
-                <p class="text-muted">Necessitam renovação</p>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'users:create' %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-person-plus"></i> Novo Usuário
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'certificates:create' %}" class="btn btn-outline-success w-100">
+                            <i class="bi bi-file-earmark-plus"></i> Novo Certificado
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'accounts:create' %}" class="btn btn-outline-info w-100">
+                            <i class="bi bi-cloud-plus"></i> Nova Conta Cloud
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'resources:create' %}" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-server"></i> Novo Recurso
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Recent Certificates -->
-{% if recent_certificates %}
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Certificados Recentes</h5>
+<!-- Recent Activity -->
+<div class="row">
+    <!-- Certificados Recentes -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-lock"></i> Certificados Recentes</h5>
+                <a href="{% url 'certificates:list' %}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+            </div>
+            <div class="card-body">
+                {% if recent_certificates %}
+                    <div class="list-group list-group-flush">
+                        {% for cert in recent_certificates %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ cert.requerente }}</h6>
+                                <p class="mb-1 text-muted small">{{ cert.num_serie }}</p>
+                                <small class="text-muted">{{ cert.data_cad|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            <div>
+                                {% if cert.status == 0 %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% elif cert.status == 2 %}
+                                    <span class="badge bg-danger">Expirado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-file-earmark-lock display-4 text-muted"></i>
+                        <p class="text-muted mt-2">Nenhum certificado cadastrado</p>
+                        <a href="{% url 'certificates:create' %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus"></i> Criar primeiro certificado
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <thead>
-                    <tr>
-                        <th>Requerente</th>
-                        <th>Número de Série</th>
-                        <th>Validade</th>
-                        <th>Status</th>
-                        <th>Data Cadastro</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cert in recent_certificates %}
-                    <tr>
-                        <td>{{ cert.requerente }}</td>
-                        <td>{{ cert.num_serie }}</td>
-                        <td>{{ cert.valid_fim|date:"d/m/Y" }}</td>
-                        <td>
-                            {% if cert.status == 0 %}
-                                <span class="badge bg-success">Ativo</span>
-                            {% elif cert.status == 1 %}
-                                <span class="badge bg-secondary">Inativo</span>
-                            {% elif cert.status == 2 %}
-                                <span class="badge bg-danger">Expirado</span>
-                            {% elif cert.status == 3 %}
-                                <span class="badge bg-warning">Revogado</span>
-                            {% else %}
-                                <span class="badge bg-info">Pendente</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ cert.data_cad|date:"d/m/Y" }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    
+    <!-- Recursos Recentes -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-server"></i> Recursos Recentes</h5>
+                <a href="{% url 'resources:list' %}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+            </div>
+            <div class="card-body">
+                {% if recent_resources %}
+                    <div class="list-group list-group-flush">
+                        {% for resource in recent_resources %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="bi {{ resource.tipo_icon }} text-primary"></i>
+                                    {{ resource.nome }}
+                                </h6>
+                                <p class="mb-1 text-muted small">{{ resource.get_tipo_display }} - {{ resource.account.nome }}</p>
+                                <small class="text-muted">{{ resource.data_cad|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            <div>
+                                <span class="badge {{ resource.status_badge_class }}">
+                                    {{ resource.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-server display-4 text-muted"></i>
+                        <p class="text-muted mt-2">Nenhum recurso cadastrado</p>
+                        <a href="{% url 'resources:create' %}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-plus"></i> Criar primeiro recurso
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
-{% endif %}
+
+<!-- Second Row - Contas Cloud e Alertas -->
+<div class="row">
+    <!-- Contas Cloud Recentes -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-cloud"></i> Contas Cloud Recentes</h5>
+                <a href="{% url 'accounts:list' %}" class="btn btn-sm btn-outline-info">Ver todas</a>
+            </div>
+            <div class="card-body">
+                {% if recent_accounts %}
+                    <div class="list-group list-group-flush">
+                        {% for account in recent_accounts %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ account.nome }}</h6>
+                                <p class="mb-1 text-muted small">{{ account.id_conta }}</p>
+                                <small class="text-muted">{{ account.data_cad|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            <div>
+                                <span class="badge bg-success">Ativa</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-cloud display-4 text-muted"></i>
+                        <p class="text-muted mt-2">Nenhuma conta cloud cadastrada</p>
+                        <a href="{% url 'accounts:create' %}" class="btn btn-info btn-sm">
+                            <i class="bi bi-plus"></i> Criar primeira conta
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas e Estatísticas Adicionais -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Alertas e Resumo</h5>
+            </div>
+            <div class="card-body">
+                <!-- Certificados Expirando -->
+                {% if cert_stats.expiring_soon > 0 %}
+                <div class="alert alert-warning" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Certificados Expirando</h6>
+                    <p class="mb-1">{{ cert_stats.expiring_soon }} certificado{{ cert_stats.expiring_soon|pluralize }} expira{{ cert_stats.expiring_soon|pluralize:"m," }} nos próximos 30 dias.</p>
+                    <a href="{% url 'certificates:list' %}?expiring=true" class="btn btn-sm btn-warning">Ver detalhes</a>
+                </div>
+                {% endif %}
+
+                <!-- Resumo por tipo de recurso -->
+                {% if resource_stats.by_type %}
+                <h6>Recursos por Tipo:</h6>
+                <div class="row">
+                    {% for item in resource_stats.by_type %}
+                    <div class="col-6 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">
+                                {% if item.tipo == 0 %}S3{% elif item.tipo == 1 %}Load Balancer{% elif item.tipo == 2 %}CloudFront{% elif item.tipo == 3 %}API Gateway{% elif item.tipo == 4 %}EC2{% elif item.tipo == 5 %}RDS{% elif item.tipo == 6 %}Lambda{% endif %}:
+                            </span>
+                            <span class="badge bg-secondary">{{ item.count }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Status dos recursos -->
+                {% if resource_stats.total > 0 %}
+                <hr>
+                <h6>Status dos Recursos:</h6>
+                <div class="row">
+                    <div class="col-4 text-center">
+                        <div class="text-success">
+                            <i class="bi bi-check-circle"></i><br>
+                            <strong>{{ resource_stats.active }}</strong><br>
+                            <small>Ativos</small>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="text-secondary">
+                            <i class="bi bi-x-circle"></i><br>
+                            <strong>{{ resource_stats.inactive }}</strong><br>
+                            <small>Inativos</small>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="text-warning">
+                            <i class="bi bi-tools"></i><br>
+                            <strong>{{ resource_stats.maintenance }}</strong><br>
+                            <small>Manutenção</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %} 

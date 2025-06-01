@@ -1,22 +1,309 @@
 {% extends 'base.html' %}
+{% load crispy_forms_tags %}
 
 {% block title %}Permissões - FCM{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1><i class="bi bi-key"></i> Permissões</h1>
-    <a href="{% url 'permissions:create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Nova Permissão
-    </a>
-</div>
-
-<div class="card">
-    <div class="card-body">
-        <div class="text-center py-5">
-            <i class="bi bi-key display-1 text-muted"></i>
-            <h3 class="mt-3">Em desenvolvimento</h3>
-            <p class="text-muted">Funcionalidade de permissões será implementada em breve.</p>
+    <div class="btn-group" role="group">
+        <a href="{% url 'permissions:create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nova Permissão
+        </a>
+        <a href="{% url 'permissions:bulk' %}" class="btn btn-outline-primary">
+            <i class="bi bi-list-check"></i> Concessão em Lote
+        </a>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-gear"></i> Gerenciar
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{% url 'permissions:role_list' %}">
+                    <i class="bi bi-shield"></i> Roles
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'permissions:user_role_list' %}">
+                    <i class="bi bi-person-gear"></i> Associações Usuário-Role
+                </a></li>
+            </ul>
         </div>
     </div>
 </div>
+
+<!-- Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ stats.total }}</h4>
+                        <p class="mb-0">Total</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-key fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ stats.granted }}</h4>
+                        <p class="mb-0">Concedidas</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-check-circle fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ stats.revoked }}</h4>
+                        <p class="mb-0">Revogadas</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-x-circle fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ stats.users_with_permissions }}</h4>
+                        <p class="mb-0">Usuários</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulário de Busca -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-search"></i> Buscar Permissões</h5>
+    </div>
+    <div class="card-body">
+        {% crispy form %}
+    </div>
+</div>
+
+<!-- Lista de Permissões -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-list"></i> Permissões 
+            <span class="badge bg-secondary">{{ page_obj.paginator.count }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th>Módulo</th>
+                            <th>Permissão</th>
+                            <th>Status</th>
+                            <th>Data Cadastro</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for permission in page_obj %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        {{ permission.user.nome|first|upper }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ permission.user.nome }}</strong>
+                                        <br><small class="text-muted">{{ permission.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">{{ permission.module_name }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ permission.get_permission_type_display }}</strong>
+                                <br><small class="text-muted">{{ permission.action_name }}</small>
+                            </td>
+                            <td>
+                                <span class="badge {{ permission.status_badge_class }}">
+                                    {% if permission.granted %}
+                                        <i class="bi bi-check-circle"></i> Concedida
+                                    {% else %}
+                                        <i class="bi bi-x-circle"></i> Revogada
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>{{ permission.data_cad|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'permissions:detail' permission.id %}" 
+                                       class="btn btn-outline-primary" title="Ver detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-secondary toggle-permission" 
+                                            data-permission-id="{{ permission.id }}" 
+                                            data-current-status="{{ permission.granted|yesno:'true,false' }}"
+                                            title="{% if permission.granted %}Revogar{% else %}Conceder{% endif %}">
+                                        <i class="bi {% if permission.granted %}bi-toggle-on{% else %}bi-toggle-off{% endif %}"></i>
+                                    </button>
+                                    <a href="{% url 'permissions:edit' permission.id %}" 
+                                       class="btn btn-outline-warning" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'permissions:delete' permission.id %}" 
+                                       class="btn btn-outline-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Navegação de permissões">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.permission_type %}&permission_type={{ request.GET.permission_type }}{% endif %}{% if request.GET.granted %}&granted={{ request.GET.granted }}{% endif %}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}">Primeira</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.permission_type %}&permission_type={{ request.GET.permission_type }}{% endif %}{% if request.GET.granted %}&granted={{ request.GET.granted }}{% endif %}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}">Anterior</a>
+                        </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.permission_type %}&permission_type={{ request.GET.permission_type }}{% endif %}{% if request.GET.granted %}&granted={{ request.GET.granted }}{% endif %}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}">Próxima</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.permission_type %}&permission_type={{ request.GET.permission_type }}{% endif %}{% if request.GET.granted %}&granted={{ request.GET.granted }}{% endif %}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}">Última</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-key display-1 text-muted"></i>
+                <h3 class="mt-3">Nenhuma permissão encontrada</h3>
+                <p class="text-muted">Comece criando a primeira permissão do sistema.</p>
+                <a href="{% url 'permissions:create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Criar Primeira Permissão
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle de permissões via AJAX
+    const toggleButtons = document.querySelectorAll('.toggle-permission');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const permissionId = this.dataset.permissionId;
+            const currentStatus = this.dataset.currentStatus === 'true';
+            
+            // Desabilitar botão durante a requisição
+            this.disabled = true;
+            
+            fetch(`{% url 'permissions:toggle_permission' '0' %}`.replace('0', permissionId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Atualizar interface
+                    const icon = this.querySelector('i');
+                    const statusBadge = this.closest('tr').querySelector('.badge');
+                    
+                    if (data.granted) {
+                        icon.className = 'bi bi-toggle-on';
+                        this.title = 'Revogar';
+                        statusBadge.className = 'badge bg-success';
+                        statusBadge.innerHTML = '<i class="bi bi-check-circle"></i> Concedida';
+                    } else {
+                        icon.className = 'bi bi-toggle-off';
+                        this.title = 'Conceder';
+                        statusBadge.className = 'badge bg-danger';
+                        statusBadge.innerHTML = '<i class="bi bi-x-circle"></i> Revogada';
+                    }
+                    
+                    this.dataset.currentStatus = data.granted.toString();
+                    
+                    // Mostrar mensagem de sucesso
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.innerHTML = `
+                        ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('h1').parentNode);
+                    
+                    // Remover alerta após 3 segundos
+                    setTimeout(() => {
+                        alertDiv.remove();
+                    }, 3000);
+                } else {
+                    alert('Erro: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Erro ao alterar permissão: ' + error.message);
+            })
+            .finally(() => {
+                this.disabled = false;
+            });
+        });
+    });
+});
+</script>
+
+<!-- Token CSRF para AJAX -->
+{% csrf_token %}
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+}
+</style>
 {% endblock %} 
