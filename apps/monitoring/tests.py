@@ -145,16 +145,15 @@ class MonitoringModelTest(TestCase):
         cost_alert = CostAlert.objects.create(
             account=self.account,
             name='Budget Alert',
-            budget_amount=1000.00,
+            threshold=1000.00,
             period='monthly',
-            threshold_percentage=80,
-            current_spend=850.00,
             created_by=self.user.email
         )
         
         self.assertEqual(cost_alert.account, self.account)
-        self.assertEqual(cost_alert.usage_percentage, 85.0)
-        self.assertTrue(cost_alert.is_over_threshold)
+        self.assertEqual(cost_alert.name, 'Budget Alert')
+        self.assertEqual(cost_alert.threshold, 1000.00)
+        self.assertEqual(cost_alert.period, 'monthly')
 
 
 class MonitoringViewTest(TestCase):

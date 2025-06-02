@@ -1,0 +1,9 @@
+robotframework==6.1.1
+robotframework-seleniumlibrary==6.2.0
+robotframework-requests==0.9.7
+robotframework-databaselibrary==1.2.4
+robotframework-faker==5.0.0
+selenium==4.15.0
+webdriver-manager==4.0.1
+requests==2.31.0
+psycopg2-binary==2.9.7 

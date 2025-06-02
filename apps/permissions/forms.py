@@ -66,6 +66,22 @@ class PermissionForm(forms.ModelForm):
                 )
         
         return cleaned_data
+    
+    def save(self, created_by=None, commit=True):
+        """Método save customizado para adicionar informações de auditoria"""
+        permission = super().save(commit=False)
+        
+        if not permission.id:  # Se é um novo objeto
+            permission.usu_cad = created_by or 'sistema'
+        else:  # Se é uma atualização
+            permission.usu_atu = created_by or 'sistema'
+            from django.utils import timezone
+            permission.data_atu = timezone.now()
+        
+        if commit:
+            permission.save()
+        
+        return permission
 
 
 class RoleForm(forms.ModelForm):

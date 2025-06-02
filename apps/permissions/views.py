@@ -290,9 +290,18 @@ def user_permissions_ajax(request, user_id):
         'permission_type', 'granted'
     )
     
+    # Formatando as permissões para o formato esperado
+    permissions_list = []
+    for perm in permissions:
+        permissions_list.append({
+            'type': perm['permission_type'],
+            'granted': perm['granted']
+        })
+    
     return JsonResponse({
+        'success': True,
         'user': user.nome,
-        'permissions': list(permissions)
+        'permissions': permissions_list
     })
 
 
