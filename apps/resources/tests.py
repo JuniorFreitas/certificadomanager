@@ -24,9 +24,9 @@ class ResourceModelTest(TestCase):
         self.account = Account.objects.create(
             id='test-account',
             nome='Test Account',
-            id_conta='123456789012',
-            client='AKIATEST123456789012',
-            secret='testsecret',
+            account_id='123456789012',
+            access_key_id='AKIATEST123456789012',
+            secret_access_key='testsecret',
             usu_cad='test@example.com'
         )
     
@@ -104,9 +104,9 @@ class ResourceFormTest(TestCase):
         self.account = Account.objects.create(
             id='test-account',
             nome='Test Account',
-            id_conta='123456789012',
-            client='AKIATEST123456789012',
-            secret='testsecret',
+            account_id='123456789012',
+            access_key_id='AKIATEST123456789012',
+            secret_access_key='testsecret',
             usu_cad='test@example.com'
         )
     
@@ -181,9 +181,9 @@ class ResourceSearchFormTest(TestCase):
         self.account = Account.objects.create(
             id='test-account',
             nome='Test Account',
-            id_conta='123456789012',
-            client='AKIATEST123456789012',
-            secret='testsecret',
+            account_id='123456789012',
+            access_key_id='AKIATEST123456789012',
+            secret_access_key='testsecret',
             usu_cad='test@example.com'
         )
     
@@ -221,9 +221,9 @@ class ResourceViewTest(TestCase):
         self.account = Account.objects.create(
             id='test-account',
             nome='Test Account',
-            id_conta='123456789012',
-            client='AKIATEST123456789012',
-            secret='testsecret',
+            account_id='123456789012',
+            access_key_id='AKIATEST123456789012',
+            secret_access_key='testsecret',
             usu_cad='test@example.com'
         )
         
@@ -404,9 +404,9 @@ class ResourceIntegrationTest(TestCase):
         self.account = Account.objects.create(
             id='test-account',
             nome='Test Account',
-            id_conta='123456789012',
-            client='AKIATEST123456789012',
-            secret='testsecret',
+            account_id='123456789012',
+            access_key_id='AKIATEST123456789012',
+            secret_access_key='testsecret',
             usu_cad='test@example.com'
         )
     
@@ -422,7 +422,7 @@ class ResourceIntegrationTest(TestCase):
         
         # Testa acesso ao account através do resource
         self.assertEqual(resource.account.nome, 'Test Account')
-        self.assertEqual(resource.account.id_conta, '123456789012')
+        self.assertEqual(resource.account.account_id, '123456789012')
         
         # Testa acesso aos resources através do account
         account_resources = self.account.resource_set.all()

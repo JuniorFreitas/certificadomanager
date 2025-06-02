@@ -1,0 +1,59 @@
+test_config:
+  # Configurações do ambiente de teste
+  base_url: "http://localhost:8000"
+  api_base_url: "http://localhost:8000/api/v1"
+  browser: "chrome"
+  headless: false
+  
+  # Configurações de timeout
+  timeout: 30
+  implicit_wait: 10
+  
+  # Configurações de banco de dados
+  database:
+    host: "localhost"
+    port: 5432
+    name: "certificatemanager_test"
+    user: "test_user"
+    password: "test_password"
+  
+  # Usuários de teste
+  users:
+    admin:
+      username: "admin"
+      password: "admin123"
+      email: "admin@test.com"
+    
+    regular_user:
+      username: "user1"
+      password: "user123"
+      email: "user1@test.com"
+    
+    manager:
+      username: "manager1"
+      password: "manager123"
+      email: "manager1@test.com"
+  
+  # Configurações de certificados de teste
+  test_certificates:
+    valid_cert:
+      name: "Test Certificate"
+      type: "SSL"
+      domain: "test.example.com"
+      expiry_days: 90
+    
+    expired_cert:
+      name: "Expired Certificate"
+      type: "SSL"
+      domain: "expired.example.com"
+      expiry_days: -10
+  
+  # Configurações de API
+  api:
+    timeout: 30
+    auth_token: ""
+    
+  # Screenshots e logs
+  capture_screenshots: true
+  screenshot_on_failure: true
+  log_level: "INFO" 

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Role - FCM{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Confirmar Exclusão
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">Atenção!</h6>
+                        <p class="mb-0">
+                            Você está prestes a excluir o role <strong>{{ role.get_name_display }}</strong>.
+                            Esta ação não pode ser desfeita.
+                        </p>
+                    </div>
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Role:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {{ role.badge_class }}">{{ role.get_name_display }}</span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Descrição:</dt>
+                        <dd class="col-sm-8">{{ role.description|default:"Sem descrição" }}</dd>
+                        
+                        <dt class="col-sm-4">Usuários:</dt>
+                        <dd class="col-sm-8">{{ role.userrole_set.count }} usuário(s) associado(s)</dd>
+                    </dl>
+
+                    {% if role.userrole_set.count > 0 %}
+                    <div class="alert alert-danger">
+                        <strong>Aviso:</strong> Este role possui usuários associados. 
+                        A exclusão removerá todas as associações.
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'permissions:role_detail' role.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Confirmar Exclusão
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

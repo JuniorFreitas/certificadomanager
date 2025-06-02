@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - FCM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-currency-dollar"></i> {{ title }}</h1>
+    <a href="{% url 'monitoring:cost_alert_create' %}" class="btn btn-success">
+        <i class="bi bi-plus"></i> Novo Alerta
+    </a>
+</div>
+
+<!-- Lista de Alertas de Custo -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Alertas de Custo</h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="row">
+                {% for cost_alert in page_obj %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card {% if cost_alert.is_over_threshold %}border-danger{% endif %}">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ cost_alert.name }}</h6>
+                                <p class="card-text text-muted small">{{ cost_alert.account.nome }}</p>
+                                
+                                <!-- Barra de progresso -->
+                                <div class="progress mb-2" style="height: 10px;">
+                                    <div class="progress-bar {% if cost_alert.is_over_threshold %}bg-danger{% else %}bg-success{% endif %}" 
+                                         style="width: {{ cost_alert.usage_percentage|floatformat:0 }}%"></div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mb-2">
+                                    <small class="text-muted">Gasto: ${{ cost_alert.current_spend }}</small>
+                                    <small class="text-muted">Orçamento: ${{ cost_alert.budget_amount }}</small>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mb-2">
+                                    <small>
+                                        <span class="badge bg-info">{{ cost_alert.get_period_display }}</span>
+                                    </small>
+                                    <small>
+                                        <span class="badge {% if cost_alert.is_over_threshold %}bg-danger{% else %}bg-success{% endif %}">
+                                            {{ cost_alert.usage_percentage|floatformat:1 }}%
+                                        </span>
+                                    </small>
+                                </div>
+                                
+                                {% if cost_alert.is_over_threshold %}
+                                    <div class="alert alert-danger alert-sm mb-2">
+                                        <i class="bi bi-exclamation-triangle"></i> Limite excedido!
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">
+                                        {% if cost_alert.is_enabled %}
+                                            <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inativo</span>
+                                        {% endif %}
+                                    </small>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-currency-dollar display-1 text-muted"></i>
+                <h4 class="mt-3">Nenhum alerta de custo encontrado</h4>
+                <p class="text-muted">Configure alertas para monitorar os gastos das suas contas AWS.</p>
+                <a href="{% url 'monitoring:cost_alert_create' %}" class="btn btn-success">
+                    <i class="bi bi-plus"></i> Criar primeiro alerta
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

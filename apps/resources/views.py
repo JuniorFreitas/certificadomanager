@@ -170,12 +170,12 @@ def _get_resource_aws_info(resource):
     try:
         # Configurar cliente AWS
         session = boto3.Session(
-            aws_access_key_id=resource.account.client,
-            aws_secret_access_key=resource.account.secret
+            aws_access_key_id=resource.account.access_key_id,
+            aws_secret_access_key=resource.account.decrypted_secret
         )
         
         info = {
-            'account_id': resource.account.id_conta,
+            'account_id': resource.account.account_id,
             'region': 'us-east-1',  # Região padrão
             'status': 'unknown'
         }
@@ -218,8 +218,8 @@ def _test_resource_connectivity(resource):
     try:
         # Configurar cliente AWS
         session = boto3.Session(
-            aws_access_key_id=resource.account.client,
-            aws_secret_access_key=resource.account.secret
+            aws_access_key_id=resource.account.access_key_id,
+            aws_secret_access_key=resource.account.decrypted_secret
         )
         
         # Teste básico de conectividade

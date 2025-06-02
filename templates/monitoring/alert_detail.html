@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load django_bootstrap5 %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .alert-status-badge {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+    .alert-severity-badge {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+    .alert-actions {
+        margin-top: 1rem;
+    }
+    .alert-timeline {
+        border-left: 3px solid #dee2e6;
+        padding-left: 1rem;
+        margin-left: 1rem;
+    }
+    .timeline-item {
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.5rem;
+        top: 0.5rem;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #6c757d;
+    }
+    .timeline-item.triggered::before {
+        background-color: #dc3545;
+    }
+    .timeline-item.acknowledged::before {
+        background-color: #ffc107;
+    }
+    .timeline-item.resolved::before {
+        background-color: #198754;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">{{ title }}</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'monitoring:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'monitoring:alert_list' %}">Alertas</a></li>
+                            <li class="breadcrumb-item active">{{ alert.rule.name }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'monitoring:alert_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </a>
+                </div>
+            </div>
+
+            <!-- Alert Details Card -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Detalhes do Alerta
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Status:</strong>
+                                    <span class="badge {{ alert.status_badge_class }} alert-status-badge ms-2">
+                                        {{ alert.get_status_display }}
+                                    </span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Severidade:</strong>
+                                    <span class="badge {{ alert.severity_badge_class }} alert-severity-badge ms-2">
+                                        {{ alert.rule.get_severity_display }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Conta AWS:</strong>
+                                    <span class="text-muted">{{ alert.account.nome }}</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Regra:</strong>
+                                    <span class="text-muted">{{ alert.rule.name }}</span>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Métrica:</strong>
+                                    <span class="text-muted">{{ alert.rule.metric }}</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Operador:</strong>
+                                    <span class="text-muted">{{ alert.rule.get_operator_display }}</span>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Valor Atual:</strong>
+                                    <span class="text-danger fw-bold">{{ alert.current_value|floatformat:2 }}</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Limite:</strong>
+                                    <span class="text-muted">{{ alert.threshold_value|floatformat:2 }}</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <strong>Mensagem:</strong>
+                                <div class="alert alert-warning mt-2">
+                                    {{ alert.message }}
+                                </div>
+                            </div>
+
+                            {% if alert.rule.description %}
+                            <div class="mb-3">
+                                <strong>Descrição da Regra:</strong>
+                                <p class="text-muted mt-2">{{ alert.rule.description }}</p>
+                            </div>
+                            {% endif %}
+
+                            <!-- Actions -->
+                            {% if alert.status == 'open' %}
+                            <div class="alert-actions">
+                                <h6>Ações:</h6>
+                                <form method="post" action="{% url 'monitoring:alert_acknowledge' alert.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-warning me-2">
+                                        <i class="fas fa-check"></i> Reconhecer
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'monitoring:alert_resolve' alert.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check-double"></i> Resolver
+                                    </button>
+                                </form>
+                            </div>
+                            {% elif alert.status == 'acknowledged' %}
+                            <div class="alert-actions">
+                                <h6>Ações:</h6>
+                                <form method="post" action="{% url 'monitoring:alert_resolve' alert.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check-double"></i> Resolver
+                                    </button>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-history"></i>
+                                Timeline
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert-timeline">
+                                <div class="timeline-item triggered">
+                                    <div class="fw-bold text-danger">Alerta Disparado</div>
+                                    <div class="text-muted small">{{ alert.triggered_at|date:"d/m/Y H:i:s" }}</div>
+                                </div>
+
+                                {% if alert.acknowledged_at %}
+                                <div class="timeline-item acknowledged">
+                                    <div class="fw-bold text-warning">Reconhecido</div>
+                                    <div class="text-muted small">{{ alert.acknowledged_at|date:"d/m/Y H:i:s" }}</div>
+                                    {% if alert.acknowledged_by %}
+                                    <div class="text-muted small">por {{ alert.acknowledged_by }}</div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                {% if alert.resolved_at %}
+                                <div class="timeline-item resolved">
+                                    <div class="fw-bold text-success">Resolvido</div>
+                                    <div class="text-muted small">{{ alert.resolved_at|date:"d/m/Y H:i:s" }}</div>
+                                    {% if alert.resolved_by %}
+                                    <div class="text-muted small">por {{ alert.resolved_by }}</div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rule Configuration -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-cog"></i>
+                                Configuração da Regra
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <strong>Intervalo de Verificação:</strong>
+                                <span class="text-muted">{{ alert.rule.check_interval }} min</span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Cooldown:</strong>
+                                <span class="text-muted">{{ alert.rule.cooldown_period }} min</span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Email:</strong>
+                                <span class="text-muted">
+                                    {% if alert.rule.notify_email %}
+                                        <i class="fas fa-check text-success"></i> Ativo
+                                    {% else %}
+                                        <i class="fas fa-times text-danger"></i> Inativo
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Slack:</strong>
+                                <span class="text-muted">
+                                    {% if alert.rule.notify_slack %}
+                                        <i class="fas fa-check text-success"></i> Ativo
+                                    {% else %}
+                                        <i class="fas fa-times text-danger"></i> Inativo
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

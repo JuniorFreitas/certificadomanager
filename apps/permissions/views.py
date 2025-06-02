@@ -3,106 +3,142 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
-from django.utils import timezone
 from django.http import JsonResponse
-from django.db import transaction
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
 from .models import Permission, Role, UserRole
 from .forms import (
-    PermissionForm, RoleForm, UserRoleForm, 
-    PermissionSearchForm, BulkPermissionForm
+    PermissionForm, RoleForm, UserRoleForm, BulkPermissionForm,
+    PermissionSearchForm, RolePermissionForm
 )
 from apps.users.models import User
+
+
+@login_required
+def dashboard(request):
+    """Dashboard do sistema de permissões"""
+    context = {
+        'total_users': User.objects.filter(is_active=True).count(),
+        'total_roles': Role.objects.filter(is_active=True).count(),
+        'total_permissions': Permission.objects.count(),
+        'total_user_roles': UserRole.objects.filter(is_active=True).count(),
+        'recent_permissions': Permission.objects.select_related('user').order_by('-data_cad')[:5],
+        'recent_user_roles': UserRole.objects.select_related('user', 'role').order_by('-data_cad')[:5],
+        'permission_stats': get_permission_statistics(),
+        'role_stats': get_role_statistics(),
+    }
+    return render(request, 'permissions/dashboard.html', context)
+
+
+def get_permission_statistics():
+    """Estatísticas de permissões por módulo"""
+    stats = {}
+    modules = ['users', 'certificates', 'accounts', 'resources', 'permissions']
+    
+    for module in modules:
+        granted = Permission.objects.filter(
+            permission_type__startswith=module,
+            granted=True
+        ).count()
+        
+        denied = Permission.objects.filter(
+            permission_type__startswith=module,
+            granted=False
+        ).count()
+        
+        stats[module] = {
+            'granted': granted,
+            'denied': denied,
+            'total': granted + denied
+        }
+    
+    return stats
+
+
+def get_role_statistics():
+    """Estatísticas de roles"""
+    return Role.objects.annotate(
+        user_count=Count('userrole__user', distinct=True)
+    ).values('name', 'user_count')
 
 
 # ============ VIEWS DE PERMISSÕES ============
 
 @login_required
 def permission_list(request):
-    """Lista todas as permissões com busca avançada e paginação"""
-    form = PermissionSearchForm(request.GET)
-    permissions = Permission.objects.select_related('user').order_by('-data_cad')
+    """Lista de permissões"""
+    permissions = Permission.objects.select_related('user').order_by('user__nome', 'permission_type')
     
-    # Aplicar filtros de busca
-    if form.is_valid():
-        search = form.cleaned_data.get('search')
-        permission_type = form.cleaned_data.get('permission_type')
-        granted = form.cleaned_data.get('granted')
-        user = form.cleaned_data.get('user')
+    # Formulário de busca
+    search_form = PermissionSearchForm(request.GET)
+    if search_form.is_valid():
+        if search_form.cleaned_data['user']:
+            permissions = permissions.filter(user=search_form.cleaned_data['user'])
         
-        if search:
-            permissions = permissions.filter(
-                Q(user__nome__icontains=search) |
-                Q(user__email__icontains=search)
-            )
+        if search_form.cleaned_data['permission_type']:
+            permissions = permissions.filter(permission_type=search_form.cleaned_data['permission_type'])
         
-        if permission_type:
-            permissions = permissions.filter(permission_type=permission_type)
-            
-        if granted:
-            permissions = permissions.filter(granted=granted == 'true')
-        
-        if user:
-            permissions = permissions.filter(user=user)
+        if search_form.cleaned_data['granted']:
+            granted = search_form.cleaned_data['granted'] == 'true'
+            permissions = permissions.filter(granted=granted)
+    
+    # Busca por texto
+    search = request.GET.get('search')
+    if search:
+        permissions = permissions.filter(
+            Q(user__nome__icontains=search) |
+            Q(user__email__icontains=search) |
+            Q(permission_type__icontains=search)
+        )
     
     # Paginação
     paginator = Paginator(permissions, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Estatísticas
-    stats = {
-        'total': Permission.objects.count(),
-        'granted': Permission.objects.filter(granted=True).count(),
-        'revoked': Permission.objects.filter(granted=False).count(),
-        'users_with_permissions': Permission.objects.values('user').distinct().count(),
-    }
-    
-    return render(request, 'permissions/list.html', {
+    context = {
         'page_obj': page_obj,
-        'form': form,
-        'stats': stats
-    })
-
-
-@login_required
-def permission_detail(request, permission_id):
-    """Exibe detalhes de uma permissão específica"""
-    permission = get_object_or_404(Permission, id=permission_id)
-    
-    # Outras permissões do mesmo usuário
-    user_permissions = Permission.objects.filter(
-        user=permission.user
-    ).exclude(id=permission.id).order_by('permission_type')
-    
-    return render(request, 'permissions/detail.html', {
-        'permission': permission,
-        'user_permissions': user_permissions
-    })
+        'search_form': search_form,
+        'search': search,
+        'total_permissions': permissions.count(),
+    }
+    return render(request, 'permissions/permission_list.html', context)
 
 
 @login_required
 def permission_create(request):
-    """Cria uma nova permissão"""
+    """Criação de permissão"""
     if request.method == 'POST':
         form = PermissionForm(request.POST)
         if form.is_valid():
-            permission = form.save(commit=False)
-            permission.usu_cad = request.user.email
-            permission.save()
+            permission = form.save(created_by=request.user.email)
             messages.success(request, 'Permissão criada com sucesso!')
-            return redirect('permissions:detail', permission_id=permission.id)
+            return redirect('permissions:permission_list')
     else:
         form = PermissionForm()
     
-    return render(request, 'permissions/form.html', {
+    context = {
         'form': form,
         'title': 'Criar Permissão'
-    })
+    }
+    return render(request, 'permissions/permission_form.html', context)
+
+
+@login_required
+def permission_detail(request, permission_id):
+    """Detalhes da permissão"""
+    permission = get_object_or_404(Permission, id=permission_id)
+    
+    context = {
+        'permission': permission,
+        'title': f'Permissão - {permission.get_permission_type_display()}'
+    }
+    return render(request, 'permissions/permission_detail.html', context)
 
 
 @login_required
 def permission_edit(request, permission_id):
-    """Edita uma permissão existente"""
+    """Editar permissão"""
     permission = get_object_or_404(Permission, id=permission_id)
     
     if request.method == 'POST':
@@ -113,228 +149,104 @@ def permission_edit(request, permission_id):
             permission.data_atu = timezone.now()
             permission.save()
             messages.success(request, 'Permissão atualizada com sucesso!')
-            return redirect('permissions:detail', permission_id=permission.id)
+            return redirect('permissions:permission_list')
     else:
         form = PermissionForm(instance=permission)
     
-    return render(request, 'permissions/form.html', {
-        'form': form,
-        'title': 'Editar Permissão',
-        'permission': permission
-    })
+    context = {'form': form, 'permission': permission, 'title': 'Editar Permissão'}
+    return render(request, 'permissions/permission_form.html', context)
 
 
 @login_required
 def permission_delete(request, permission_id):
-    """Exclui uma permissão"""
+    """Excluir permissão"""
     permission = get_object_or_404(Permission, id=permission_id)
     
     if request.method == 'POST':
-        user_name = permission.user.nome
-        permission_name = permission.get_permission_type_display()
         permission.delete()
-        messages.success(request, f'Permissão "{permission_name}" do usuário "{user_name}" excluída com sucesso!')
-        return redirect('permissions:list')
+        messages.success(request, 'Permissão excluída com sucesso!')
+        return redirect('permissions:permission_list')
     
-    return render(request, 'permissions/delete.html', {
-        'permission': permission
-    })
+    context = {'permission': permission}
+    return render(request, 'permissions/permission_confirm_delete.html', context)
 
 
 @login_required
 def bulk_permissions(request):
-    """Concessão em lote de permissões"""
+    """Atribuição em massa de permissões"""
     if request.method == 'POST':
         form = BulkPermissionForm(request.POST)
         if form.is_valid():
-            users = form.cleaned_data['users']
-            permissions = form.cleaned_data['permissions']
-            granted = form.cleaned_data['granted']
-            
-            created_count = 0
-            updated_count = 0
-            
-            with transaction.atomic():
-                for user in users:
-                    for permission_type in permissions:
-                        permission, created = Permission.objects.get_or_create(
-                            user=user,
-                            permission_type=permission_type,
-                            defaults={
-                                'granted': granted,
-                                'usu_cad': request.user.email
-                            }
-                        )
-                        
-                        if created:
-                            created_count += 1
-                        else:
-                            permission.granted = granted
-                            permission.usu_atu = request.user.email
-                            permission.data_atu = timezone.now()
-                            permission.save()
-                            updated_count += 1
-            
-            action = 'concedidas' if granted else 'revogadas'
-            messages.success(
-                request, 
-                f'Permissões {action} com sucesso! '
-                f'{created_count} criadas, {updated_count} atualizadas.'
-            )
-            return redirect('permissions:list')
+            permissions = form.save(request.user.email)
+            count = len(permissions)
+            action = 'concedidas' if form.cleaned_data['granted'] else 'negadas'
+            messages.success(request, f'{count} permissões {action} com sucesso!')
+            return redirect('permissions:permission_list')
     else:
         form = BulkPermissionForm()
     
-    return render(request, 'permissions/bulk_form.html', {
-        'form': form,
-        'title': 'Concessão em Lote'
-    })
+    context = {'form': form, 'title': 'Atribuição em Massa de Permissões'}
+    return render(request, 'permissions/bulk_permissions.html', context)
 
 
-# ============ VIEWS DE ROLES ============
-
-@login_required
-def role_list(request):
-    """Lista todos os roles"""
-    roles = Role.objects.annotate(
-        user_count=Count('userrole')
-    ).order_by('name')
-    
-    # Estatísticas
-    stats = {
-        'total': Role.objects.count(),
-        'active': Role.objects.filter(is_active=True).count(),
-        'inactive': Role.objects.filter(is_active=False).count(),
-    }
-    
-    return render(request, 'permissions/role_list.html', {
-        'roles': roles,
-        'stats': stats
-    })
-
-
-@login_required
-def role_detail(request, role_id):
-    """Exibe detalhes de um role específico"""
-    role = get_object_or_404(Role, id=role_id)
-    
-    # Usuários com este role
-    user_roles = UserRole.objects.filter(role=role).select_related('user')
-    
-    return render(request, 'permissions/role_detail.html', {
-        'role': role,
-        'user_roles': user_roles
-    })
-
-
-@login_required
-def role_create(request):
-    """Cria um novo role"""
-    if request.method == 'POST':
-        form = RoleForm(request.POST)
-        if form.is_valid():
-            role = form.save(commit=False)
-            role.usu_cad = request.user.email
-            role.save()
-            messages.success(request, 'Role criado com sucesso!')
-            return redirect('permissions:role_detail', role_id=role.id)
-    else:
-        form = RoleForm()
-    
-    return render(request, 'permissions/role_form.html', {
-        'form': form,
-        'title': 'Criar Role'
-    })
-
-
-@login_required
-def role_edit(request, role_id):
-    """Edita um role existente"""
-    role = get_object_or_404(Role, id=role_id)
-    
-    if request.method == 'POST':
-        form = RoleForm(request.POST, instance=role)
-        if form.is_valid():
-            role = form.save(commit=False)
-            role.usu_atu = request.user.email
-            role.data_atu = timezone.now()
-            role.save()
-            messages.success(request, 'Role atualizado com sucesso!')
-            return redirect('permissions:role_detail', role_id=role.id)
-    else:
-        form = RoleForm(instance=role)
-    
-    return render(request, 'permissions/role_form.html', {
-        'form': form,
-        'title': 'Editar Role',
-        'role': role
-    })
-
-
-@login_required
-def role_delete(request, role_id):
-    """Exclui um role"""
-    role = get_object_or_404(Role, id=role_id)
-    
-    if request.method == 'POST':
-        role_name = role.get_name_display()
-        role.delete()
-        messages.success(request, f'Role "{role_name}" excluído com sucesso!')
-        return redirect('permissions:role_list')
-    
-    return render(request, 'permissions/role_delete.html', {
-        'role': role
-    })
-
-
-# ============ VIEWS DE ASSOCIAÇÕES USUÁRIO-ROLE ============
+# ============ VIEWS DE USER ROLES ============
 
 @login_required
 def user_role_list(request):
-    """Lista todas as associações usuário-role"""
+    """Lista de associações usuário-role"""
     user_roles = UserRole.objects.select_related('user', 'role').order_by('user__nome', 'role__name')
     
+    # Busca
+    search = request.GET.get('search')
+    if search:
+        user_roles = user_roles.filter(
+            Q(user__nome__icontains=search) |
+            Q(user__email__icontains=search) |
+            Q(role__name__icontains=search)
+        )
+    
+    # Filtro por status
+    status = request.GET.get('status')
+    if status == 'active':
+        user_roles = user_roles.filter(is_active=True)
+    elif status == 'inactive':
+        user_roles = user_roles.filter(is_active=False)
+    
     # Paginação
-    paginator = Paginator(user_roles, 20)
+    paginator = Paginator(user_roles, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Estatísticas
-    stats = {
-        'total': UserRole.objects.count(),
-        'active': UserRole.objects.filter(is_active=True).count(),
-        'inactive': UserRole.objects.filter(is_active=False).count(),
-    }
-    
-    return render(request, 'permissions/user_role_list.html', {
+    context = {
         'page_obj': page_obj,
-        'stats': stats
-    })
+        'search': search,
+        'status': status,
+        'total_user_roles': user_roles.count(),
+    }
+    return render(request, 'permissions/user_role_list.html', context)
 
 
 @login_required
 def user_role_create(request):
-    """Cria uma nova associação usuário-role"""
+    """Criar nova associação usuário-role"""
     if request.method == 'POST':
         form = UserRoleForm(request.POST)
         if form.is_valid():
             user_role = form.save(commit=False)
             user_role.usu_cad = request.user.email
             user_role.save()
-            messages.success(request, 'Associação usuário-role criada com sucesso!')
+            messages.success(request, f'Role "{user_role.role.get_name_display()}" atribuído ao usuário "{user_role.user.nome}" com sucesso!')
             return redirect('permissions:user_role_list')
     else:
         form = UserRoleForm()
     
-    return render(request, 'permissions/user_role_form.html', {
-        'form': form,
-        'title': 'Associar Usuário a Role'
-    })
+    context = {'form': form, 'title': 'Atribuir Role a Usuário'}
+    return render(request, 'permissions/user_role_form.html', context)
 
 
 @login_required
 def user_role_edit(request, user_role_id):
-    """Edita uma associação usuário-role"""
+    """Editar associação usuário-role"""
     user_role = get_object_or_404(UserRole, id=user_role_id)
     
     if request.method == 'POST':
@@ -344,98 +256,208 @@ def user_role_edit(request, user_role_id):
             user_role.usu_atu = request.user.email
             user_role.data_atu = timezone.now()
             user_role.save()
-            messages.success(request, 'Associação atualizada com sucesso!')
+            messages.success(request, 'Associação usuário-role atualizada com sucesso!')
             return redirect('permissions:user_role_list')
     else:
         form = UserRoleForm(instance=user_role)
     
-    return render(request, 'permissions/user_role_form.html', {
-        'form': form,
-        'title': 'Editar Associação',
-        'user_role': user_role
-    })
+    context = {'form': form, 'user_role': user_role, 'title': 'Editar Associação Usuário-Role'}
+    return render(request, 'permissions/user_role_form.html', context)
 
 
 @login_required
 def user_role_delete(request, user_role_id):
-    """Exclui uma associação usuário-role"""
+    """Excluir associação usuário-role"""
     user_role = get_object_or_404(UserRole, id=user_role_id)
     
     if request.method == 'POST':
-        user_name = user_role.user.nome
-        role_name = user_role.role.get_name_display()
         user_role.delete()
-        messages.success(request, f'Associação "{user_name} - {role_name}" excluída com sucesso!')
+        messages.success(request, 'Associação usuário-role excluída com sucesso!')
         return redirect('permissions:user_role_list')
     
-    return render(request, 'permissions/user_role_delete.html', {
-        'user_role': user_role
-    })
+    context = {'user_role': user_role}
+    return render(request, 'permissions/user_role_confirm_delete.html', context)
 
 
 # ============ VIEWS AJAX ============
 
 @login_required
-def get_user_permissions(request, user_id):
+@require_http_methods(["GET"])
+def user_permissions_ajax(request, user_id):
     """Retorna as permissões de um usuário via AJAX"""
-    if request.method != 'GET':
-        return JsonResponse({'error': 'Método não permitido'}, status=405)
+    user = get_object_or_404(User, id=user_id)
+    permissions = Permission.objects.filter(user=user).values(
+        'permission_type', 'granted'
+    )
     
-    try:
-        user = get_object_or_404(User, id=user_id)
-        permissions = Permission.objects.filter(user=user).order_by('permission_type')
-        
-        permission_data = []
-        for perm in permissions:
-            permission_data.append({
-                'id': perm.id,
-                'type': perm.permission_type,
-                'type_display': perm.get_permission_type_display(),
-                'granted': perm.granted,
-                'module': perm.module_name,
-                'action': perm.action_name,
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'user': {
-                'id': user.id,
-                'name': user.nome,
-                'email': user.email
-            },
-            'permissions': permission_data
+    # Formatando as permissões para o formato esperado
+    permissions_list = []
+    for perm in permissions:
+        permissions_list.append({
+            'type': perm['permission_type'],
+            'granted': perm['granted']
         })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })
+    
+    return JsonResponse({
+        'success': True,
+        'user': user.nome,
+        'permissions': permissions_list
+    })
 
 
 @login_required
-def toggle_permission(request, permission_id):
+@require_http_methods(["POST"])
+def toggle_permission_ajax(request, permission_id):
     """Alterna o status de uma permissão via AJAX"""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Método não permitido'}, status=405)
+    permission = get_object_or_404(Permission, id=permission_id)
+    permission.granted = not permission.granted
+    permission.usu_atu = request.user.email
+    permission.data_atu = timezone.now()
+    permission.save()
     
-    try:
-        permission = get_object_or_404(Permission, id=permission_id)
-        permission.granted = not permission.granted
-        permission.usu_atu = request.user.email
-        permission.data_atu = timezone.now()
-        permission.save()
-        
-        action = 'concedida' if permission.granted else 'revogada'
-        
-        return JsonResponse({
-            'success': True,
-            'granted': permission.granted,
-            'message': f'Permissão {action} com sucesso!'
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })
+    return JsonResponse({
+        'success': True,
+        'granted': permission.granted,
+        'message': f'Permissão {"concedida" if permission.granted else "negada"} com sucesso!'
+    })
+
+
+# ============ VIEWS DE RELATÓRIOS ============
+
+@login_required
+def permission_report(request):
+    """Relatório de permissões"""
+    # Estatísticas gerais
+    stats = {
+        'total_users': User.objects.filter(is_active=True).count(),
+        'total_permissions': Permission.objects.count(),
+        'granted_permissions': Permission.objects.filter(granted=True).count(),
+        'denied_permissions': Permission.objects.filter(granted=False).count(),
+    }
+    
+    # Permissões por módulo
+    module_stats = get_permission_statistics()
+    
+    # Usuários com mais permissões
+    top_users = User.objects.annotate(
+        permission_count=Count('permission')
+    ).filter(permission_count__gt=0).order_by('-permission_count')[:10]
+    
+    # Permissões mais comuns
+    common_permissions = Permission.objects.values('permission_type').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    context = {
+        'stats': stats,
+        'module_stats': module_stats,
+        'top_users': top_users,
+        'common_permissions': common_permissions,
+    }
+    return render(request, 'permissions/permission_report.html', context)
+
+
+# ============ VIEWS DE ROLES ============
+
+@login_required
+def role_list(request):
+    """Lista de roles"""
+    roles = Role.objects.all().order_by('name')
+    
+    # Busca
+    search = request.GET.get('search')
+    if search:
+        roles = roles.filter(
+            Q(name__icontains=search) |
+            Q(description__icontains=search)
+        )
+    
+    # Filtro por status
+    status = request.GET.get('status')
+    if status == 'active':
+        roles = roles.filter(is_active=True)
+    elif status == 'inactive':
+        roles = roles.filter(is_active=False)
+    
+    # Paginação
+    paginator = Paginator(roles, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'search': search,
+        'status': status,
+        'total_roles': roles.count(),
+    }
+    return render(request, 'permissions/role_list.html', context)
+
+
+@login_required
+def role_detail(request, role_id):
+    """Detalhes do role"""
+    role = get_object_or_404(Role, id=role_id)
+    
+    # Usuários com este role
+    user_roles = UserRole.objects.filter(role=role, is_active=True).select_related('user')
+    
+    context = {
+        'role': role,
+        'user_roles': user_roles,
+        'total_users': user_roles.count(),
+    }
+    return render(request, 'permissions/role_detail.html', context)
+
+
+@login_required
+def role_create(request):
+    """Criar novo role"""
+    if request.method == 'POST':
+        form = RoleForm(request.POST)
+        if form.is_valid():
+            role = form.save(commit=False)
+            role.usu_cad = request.user.email
+            role.save()
+            messages.success(request, f'Role "{role.get_name_display()}" criado com sucesso!')
+            return redirect('permissions:role_list')
+    else:
+        form = RoleForm()
+    
+    context = {'form': form, 'title': 'Criar Role'}
+    return render(request, 'permissions/role_form.html', context)
+
+
+@login_required
+def role_edit(request, role_id):
+    """Editar role"""
+    role = get_object_or_404(Role, id=role_id)
+    
+    if request.method == 'POST':
+        form = RoleForm(request.POST, instance=role)
+        if form.is_valid():
+            role = form.save(commit=False)
+            role.usu_atu = request.user.email
+            role.data_atu = timezone.now()
+            role.save()
+            messages.success(request, f'Role "{role.get_name_display()}" atualizado com sucesso!')
+            return redirect('permissions:role_list')
+    else:
+        form = RoleForm(instance=role)
+    
+    context = {'form': form, 'role': role, 'title': 'Editar Role'}
+    return render(request, 'permissions/role_form.html', context)
+
+
+@login_required
+def role_delete(request, role_id):
+    """Excluir role"""
+    role = get_object_or_404(Role, id=role_id)
+    
+    if request.method == 'POST':
+        role_name = role.get_name_display()
+        role.delete()
+        messages.success(request, f'Role "{role_name}" excluído com sucesso!')
+        return redirect('permissions:role_list')
+    
+    context = {'role': role}
+    return render(request, 'permissions/role_confirm_delete.html', context)

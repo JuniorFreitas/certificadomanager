@@ -35,6 +35,7 @@ urlpatterns = [
     path('accounts/', include('apps.accounts.urls')),
     path('resources/', include('apps.resources.urls')),
     path('permissions/', include('apps.permissions.urls')),
+    path('monitoring/', include('apps.monitoring.urls')),  # URLs do sistema de monitoramento
 ]
 
 # Serve media files in development

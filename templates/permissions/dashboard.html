@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard de Permissões - FCM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        transition: transform 0.2s;
+    }
+    .stats-card:hover {
+        transform: translateY(-2px);
+    }
+    .permission-module {
+        border-left: 4px solid #007bff;
+        padding-left: 15px;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Dashboard de Permissões</h1>
+            <p class="text-muted">Visão geral do sistema de permissões e roles</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{% url 'permissions:permission_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nova Permissão
+            </a>
+            <a href="{% url 'permissions:role_create' %}" class="btn btn-outline-primary">
+                <i class="fas fa-user-tag"></i> Novo Role
+            </a>
+            <a href="{% url 'permissions:bulk_permissions' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-tasks"></i> Atribuição em Massa
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2 stats-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Usuários Ativos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_users }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2 stats-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Roles Ativos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_roles }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-tag fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2 stats-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total de Permissões
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_permissions }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-key fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2 stats-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Associações Ativas
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_user_roles }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-link fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Permissões por Módulo -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Permissões por Módulo</h6>
+                    <a href="{% url 'permissions:permission_report' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-chart-bar"></i> Ver Relatório
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% for module, stats in permission_stats.items %}
+                    <div class="permission-module mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 text-capitalize">{{ module|title }}</h6>
+                            <span class="badge bg-secondary">{{ stats.total }} total</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 20px;">
+                            {% if stats.total > 0 %}
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {% widthratio stats.granted stats.total 100 %}%"
+                                     title="Concedidas: {{ stats.granted }}">
+                                    {{ stats.granted }}
+                                </div>
+                                <div class="progress-bar bg-danger" role="progressbar" 
+                                     style="width: {% widthratio stats.denied stats.total 100 %}%"
+                                     title="Negadas: {{ stats.denied }}">
+                                    {{ stats.denied }}
+                                </div>
+                            {% else %}
+                                <div class="progress-bar bg-light" role="progressbar" style="width: 100%">
+                                    Nenhuma permissão
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex justify-content-between text-sm">
+                            <span class="text-success">
+                                <i class="fas fa-check"></i> {{ stats.granted }} concedidas
+                            </span>
+                            <span class="text-danger">
+                                <i class="fas fa-times"></i> {{ stats.denied }} negadas
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-info-circle fa-2x mb-3"></i>
+                        <p>Nenhuma permissão encontrada</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribuição de Roles -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Distribuição de Roles</h6>
+                </div>
+                <div class="card-body">
+                    {% for role_stat in role_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="badge bg-primary me-2">{{ role_stat.name|upper }}</span>
+                            <span class="text-capitalize">{{ role_stat.name }}</span>
+                        </div>
+                        <span class="font-weight-bold">{{ role_stat.user_count }} usuários</span>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-user-tag fa-2x mb-3"></i>
+                        <p>Nenhum role encontrado</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Permissões Recentes -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Permissões Recentes</h6>
+                    <a href="{% url 'permissions:permission_list' %}" class="btn btn-sm btn-outline-primary">
+                        Ver Todas
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% for permission in recent_permissions %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-3">
+                            <span class="badge {{ permission.status_badge_class }}">
+                                {% if permission.granted %}Concedida{% else %}Negada{% endif %}
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="font-weight-bold">{{ permission.user.nome }}</div>
+                            <div class="text-muted small">{{ permission.get_permission_type_display }}</div>
+                        </div>
+                        <div class="text-muted small">
+                            {{ permission.data_cad|date:"d/m/Y H:i" }}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-key fa-2x mb-3"></i>
+                        <p>Nenhuma permissão recente</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Associações Recentes -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Associações Recentes</h6>
+                    <a href="{% url 'permissions:user_role_list' %}" class="btn btn-sm btn-outline-primary">
+                        Ver Todas
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% for user_role in recent_user_roles %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-3">
+                            <span class="badge {{ user_role.role.badge_class }}">
+                                {{ user_role.role.get_name_display }}
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="font-weight-bold">{{ user_role.user.nome }}</div>
+                            <div class="text-muted small">{{ user_role.user.email }}</div>
+                        </div>
+                        <div class="text-muted small">
+                            {{ user_role.data_cad|date:"d/m/Y H:i" }}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-link fa-2x mb-3"></i>
+                        <p>Nenhuma associação recente</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Ações Rápidas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'permissions:permission_list' %}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-list"></i><br>
+                                Gerenciar Permissões
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'permissions:role_list' %}" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-user-tag"></i><br>
+                                Gerenciar Roles
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'permissions:user_role_list' %}" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-link"></i><br>
+                                Associações
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'permissions:permission_report' %}" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-chart-bar"></i><br>
+                                Relatórios
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Adicionar tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
+    
+    // Animação dos cards de estatísticas
+    $('.stats-card').hover(
+        function() {
+            $(this).addClass('shadow-lg');
+        },
+        function() {
+            $(this).removeClass('shadow-lg');
+        }
+    );
+});
+</script>
+{% endblock %} 
