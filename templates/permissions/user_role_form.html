@@ -4,155 +4,25 @@
 {% block title %}{{ title }} - FCM{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="mb-0">
-                    <i class="bi bi-person-gear"></i> {{ title }}
-                </h3>
-            </div>
-            <div class="card-body">
-                <!-- Alertas informativos -->
-                <div class="alert alert-info" role="alert">
-                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Associação Usuário-Role</h6>
-                    <ul class="mb-0">
-                        <li><strong>Flexibilidade:</strong> Usuários podem ter múltiplos roles</li>
-                        <li><strong>Hierarquia:</strong> Roles definem níveis de acesso no sistema</li>
-                        <li><strong>Status:</strong> Associações podem ser ativadas ou desativadas</li>
-                        <li><strong>Auditoria:</strong> Todas as alterações são registradas</li>
-                    </ul>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-tag"></i> {{ title }}
+                    </h5>
                 </div>
+                <div class="card-body">
+                    {% if user_role %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Editando associação:</strong> 
+                        {{ user_role.user.nome }} - {{ user_role.role.get_name_display }}
+                    </div>
+                    {% endif %}
 
-                <!-- Formulário -->
-                <form method="post" novalidate>
-                    {% csrf_token %}
                     {% crispy form %}
-                </form>
-            </div>
-        </div>
-
-        <!-- Guia de Roles -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-question-circle"></i> Guia de Roles</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card border-danger">
-                            <div class="card-header bg-danger text-white">
-                                <h6 class="mb-0"><i class="bi bi-shield-exclamation"></i> Administrador</h6>
-                            </div>
-                            <div class="card-body">
-                                <ul class="small mb-0">
-                                    <li>Acesso total ao sistema</li>
-                                    <li>Gerenciamento de usuários</li>
-                                    <li>Configurações do sistema</li>
-                                    <li>Relatórios e auditoria</li>
-                                </ul>
-                            </div>
-                        </div>
-                        
-                        <div class="card border-warning mt-3">
-                            <div class="card-header bg-warning text-dark">
-                                <h6 class="mb-0"><i class="bi bi-shield-check"></i> Gerente</h6>
-                            </div>
-                            <div class="card-body">
-                                <ul class="small mb-0">
-                                    <li>Supervisão de equipes</li>
-                                    <li>Relatórios gerenciais</li>
-                                    <li>Aprovação de processos</li>
-                                    <li>Gestão de recursos da área</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card border-primary">
-                            <div class="card-header bg-primary text-white">
-                                <h6 class="mb-0"><i class="bi bi-shield"></i> Usuário</h6>
-                            </div>
-                            <div class="card-body">
-                                <ul class="small mb-0">
-                                    <li>Acesso operacional</li>
-                                    <li>Gerenciamento de certificados</li>
-                                    <li>Operações do dia a dia</li>
-                                    <li>Consultas e relatórios básicos</li>
-                                </ul>
-                            </div>
-                        </div>
-                        
-                        <div class="card border-secondary mt-3">
-                            <div class="card-header bg-secondary text-white">
-                                <h6 class="mb-0"><i class="bi bi-shield-slash"></i> Visualizador</h6>
-                            </div>
-                            <div class="card-body">
-                                <ul class="small mb-0">
-                                    <li>Acesso somente leitura</li>
-                                    <li>Consulta de informações</li>
-                                    <li>Visualização de relatórios</li>
-                                    <li>Sem permissões de alteração</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="alert alert-warning mt-3" role="alert">
-                    <small>
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <strong>Importante:</strong> Roles são complementares às permissões específicas. 
-                        Um usuário pode ter um role e permissões adicionais.
-                    </small>
-                </div>
-            </div>
-        </div>
-
-        <!-- Associações existentes do usuário (se editando) -->
-        {% if user_role %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-list-check"></i> Outras Associações do Usuário</h5>
-            </div>
-            <div class="card-body">
-                <div id="userRoles">
-                    <div class="text-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Carregando...</span>
-                        </div>
-                        <p class="mt-2">Carregando associações...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Dicas de uso -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Dicas de Uso</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><i class="bi bi-check-circle text-success"></i> Boas Práticas</h6>
-                        <ul class="small text-muted">
-                            <li>Associe usuários ao role mais adequado ao seu cargo</li>
-                            <li>Use múltiplos roles apenas quando necessário</li>
-                            <li>Mantenha associações atualizadas</li>
-                            <li>Desative associações em vez de excluir</li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><i class="bi bi-exclamation-triangle text-warning"></i> Cuidados</h6>
-                        <ul class="small text-muted">
-                            <li>Role de Admin deve ser usado com cautela</li>
-                            <li>Verifique conflitos entre roles</li>
-                            <li>Monitore associações de usuários críticos</li>
-                            <li>Documente mudanças importantes</li>
-                        </ul>
-                    </div>
                 </div>
             </div>
         </div>

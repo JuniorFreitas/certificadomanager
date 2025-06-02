@@ -1,87 +1,53 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Associações Usuário-Role - FCM{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-person-gear"></i> Associações Usuário-Role</h1>
-    <div class="btn-group" role="group">
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Associações Usuário-Role</h1>
         <a href="{% url 'permissions:user_role_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Nova Associação
-        </a>
-        <a href="{% url 'permissions:list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar às Permissões
+            <i class="fas fa-plus"></i> Nova Associação
         </a>
     </div>
-</div>
 
-<!-- Estatísticas -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="mb-0">{{ stats.total }}</h4>
-                        <p class="mb-0">Total de Associações</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-person-gear fs-2"></i>
-                    </div>
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" placeholder="Buscar por usuário ou role..." value="{{ search }}">
                 </div>
-            </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-control">
+                        <option value="">Todos os status</option>
+                        <option value="active" {% if status == 'active' %}selected{% endif %}>Ativos</option>
+                        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inativos</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary">Buscar</button>
+                </div>
+                <div class="col-md-3 text-end">
+                    <span class="text-muted">Total: {{ total_user_roles }} associação(ões)</span>
+                </div>
+            </form>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="mb-0">{{ stats.active }}</h4>
-                        <p class="mb-0">Ativas</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-check-circle fs-2"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-secondary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="mb-0">{{ stats.inactive }}</h4>
-                        <p class="mb-0">Inativas</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-x-circle fs-2"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Lista de Associações -->
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="bi bi-list"></i> Associações Usuário-Role
-            <span class="badge bg-secondary">{{ page_obj.paginator.count }}</span>
-        </h5>
-    </div>
-    <div class="card-body">
-        {% if page_obj %}
+    <!-- Lista de Associações -->
+    <div class="card">
+        <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
                         <tr>
                             <th>Usuário</th>
+                            <th>Email</th>
                             <th>Role</th>
                             <th>Status</th>
-                            <th>Associado em</th>
+                            <th>Criado em</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -95,10 +61,13 @@
                                     </div>
                                     <div>
                                         <strong>{{ user_role.user.nome }}</strong>
-                                        <br><small class="text-muted">{{ user_role.user.email }}</small>
+                                        {% if not user_role.user.is_active %}
+                                            <span class="badge bg-warning ms-1">Usuário Inativo</span>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </td>
+                            <td>{{ user_role.user.email }}</td>
                             <td>
                                 <span class="badge {{ user_role.role.badge_class }}">
                                     {{ user_role.role.get_name_display }}
@@ -106,35 +75,30 @@
                             </td>
                             <td>
                                 {% if user_role.is_active %}
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Ativa
-                                    </span>
+                                    <span class="badge bg-success">Ativo</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">
-                                        <i class="bi bi-x-circle"></i> Inativa
-                                    </span>
+                                    <span class="badge bg-secondary">Inativo</span>
                                 {% endif %}
                             </td>
                             <td>{{ user_role.data_cad|date:"d/m/Y H:i" }}</td>
                             <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'users:detail' user_role.user.id %}" 
-                                       class="btn btn-outline-info" title="Ver usuário">
-                                        <i class="bi bi-person"></i>
-                                    </a>
-                                    <a href="{% url 'permissions:role_detail' user_role.role.id %}" 
-                                       class="btn btn-outline-primary" title="Ver role">
-                                        <i class="bi bi-shield"></i>
-                                    </a>
+                                <div class="btn-group btn-group-sm">
                                     <a href="{% url 'permissions:user_role_edit' user_role.id %}" 
-                                       class="btn btn-outline-warning" title="Editar">
-                                        <i class="bi bi-pencil"></i>
+                                       class="btn btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
                                     </a>
                                     <a href="{% url 'permissions:user_role_delete' user_role.id %}" 
                                        class="btn btn-outline-danger" title="Excluir">
-                                        <i class="bi bi-trash"></i>
+                                        <i class="fas fa-trash"></i>
                                     </a>
                                 </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="fas fa-users fa-2x mb-2"></i>
+                                <p class="mb-0">Nenhuma associação encontrada</p>
                             </td>
                         </tr>
                         {% endfor %}
@@ -144,109 +108,38 @@
 
             <!-- Paginação -->
             {% if page_obj.has_other_pages %}
-            <nav aria-label="Navegação de associações">
+            <nav aria-label="Paginação" class="mt-4">
                 <ul class="pagination justify-content-center">
                     {% if page_obj.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page=1">Primeira</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </a>
                         </li>
                     {% endif %}
-
-                    <li class="page-item active">
-                        <span class="page-link">
-                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-                        </span>
-                    </li>
-
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
                     {% if page_obj.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">
+                                Próximo <i class="fas fa-chevron-right"></i>
+                            </a>
                         </li>
                     {% endif %}
                 </ul>
             </nav>
             {% endif %}
-        {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-person-gear display-1 text-muted"></i>
-                <h3 class="mt-3">Nenhuma associação encontrada</h3>
-                <p class="text-muted">Comece criando a primeira associação usuário-role.</p>
-                <a href="{% url 'permissions:user_role_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Criar Primeira Associação
-                </a>
-            </div>
-        {% endif %}
-    </div>
-</div>
-
-<!-- Resumo por Role -->
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Resumo por Role</h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            {% for role_name, role_display in role_choices %}
-            {% with role_count=role_stats|default_if_none:0 %}
-            <div class="col-md-3 mb-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <span class="badge {% if role_name == 'admin' %}bg-danger{% elif role_name == 'manager' %}bg-warning{% elif role_name == 'user' %}bg-primary{% else %}bg-secondary{% endif %}">
-                                {{ role_display }}
-                            </span>
-                        </h5>
-                        <h3 class="text-primary">
-                            {{ role_stats|default:0 }}
-                        </h3>
-                        <p class="card-text text-muted">usuários</p>
-                    </div>
-                </div>
-            </div>
-            {% endwith %}
-            {% endfor %}
-        </div>
-    </div>
-</div>
-
-<!-- Informações sobre Associações -->
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Sobre as Associações</h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <h6><i class="bi bi-link text-primary"></i> Associações Ativas</h6>
-                <p class="small text-muted">
-                    Usuários com associações ativas herdam as características e 
-                    responsabilidades do role associado.
-                </p>
-                
-                <h6><i class="bi bi-person-plus text-success"></i> Múltiplos Roles</h6>
-                <p class="small text-muted">
-                    Um usuário pode ter múltiplos roles, permitindo flexibilidade 
-                    na gestão de permissões.
-                </p>
-            </div>
-            <div class="col-md-6">
-                <h6><i class="bi bi-shield-check text-warning"></i> Hierarquia</h6>
-                <p class="small text-muted">
-                    Roles seguem uma hierarquia: Admin > Gerente > Usuário > Visualizador.
-                </p>
-                
-                <h6><i class="bi bi-clock-history text-info"></i> Auditoria</h6>
-                <p class="small text-muted">
-                    Todas as associações são auditadas com data de criação, 
-                    atualização e usuários responsáveis.
-                </p>
-            </div>
         </div>
     </div>
 </div>

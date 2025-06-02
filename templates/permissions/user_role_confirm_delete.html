@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Associação - FCM{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Confirmar Exclusão
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">Atenção!</h6>
+                        <p class="mb-0">
+                            Você está prestes a excluir a associação entre o usuário 
+                            <strong>{{ user_role.user.nome }}</strong> e o role 
+                            <strong>{{ user_role.role.get_name_display }}</strong>.
+                            Esta ação não pode ser desfeita.
+                        </p>
+                    </div>
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Usuário:</dt>
+                        <dd class="col-sm-8">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                    {{ user_role.user.nome|first|upper }}
+                                </div>
+                                <div>
+                                    <strong>{{ user_role.user.nome }}</strong>
+                                    <br><small class="text-muted">{{ user_role.user.email }}</small>
+                                </div>
+                            </div>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Role:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {{ user_role.role.badge_class }}">
+                                {{ user_role.role.get_name_display }}
+                            </span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Status:</dt>
+                        <dd class="col-sm-8">
+                            {% if user_role.is_active %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">Criado em:</dt>
+                        <dd class="col-sm-8">{{ user_role.data_cad|date:"d/m/Y H:i" }}</dd>
+                        
+                        <dt class="col-sm-4">Criado por:</dt>
+                        <dd class="col-sm-8">{{ user_role.usu_cad }}</dd>
+                    </dl>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Impacto:</strong> O usuário perderá as permissões associadas a este role.
+                        Certifique-se de que o usuário possui outras formas de acesso necessárias.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'permissions:user_role_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Confirmar Exclusão
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+}
+</style>
+{% endblock %} 
