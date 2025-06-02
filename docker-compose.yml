@@ -6,13 +6,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      POSTGRES_DB: fcm_db
-      POSTGRES_USER: fcm_user
-      POSTGRES_PASSWORD: fcm_password
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fcm_user -d fcm_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -26,16 +26,8 @@ services:
       - media_volume:/app/media
     ports:
       - "8000:8000"
-    environment:
-      - DEBUG=True
-      - SECRET_KEY=django-insecure-development-key-change-in-production
-      - DB_ENGINE=django.db.backends.postgresql
-      - DB_NAME=fcm_db
-      - DB_USER=fcm_user
-      - DB_PASSWORD=fcm_password
-      - DB_HOST=db
-      - DB_PORT=5432
-      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
