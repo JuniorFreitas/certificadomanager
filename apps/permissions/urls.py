@@ -12,19 +12,19 @@ urlpatterns = [
     path('permissions/', views.permission_list, name='list'),  # Alias para compatibilidade com testes
     path('permissions/create/', views.permission_create, name='permission_create'),
     path('permissions/create/', views.permission_create, name='create'),  # Alias para compatibilidade com testes
+    path('permissions/bulk/', views.bulk_permissions, name='bulk_permissions'),
+    path('permissions/bulk/', views.bulk_permissions, name='bulk'),  # Alias para compatibilidade com testes
     path('permissions/<str:permission_id>/', views.permission_detail, name='permission_detail'),
     path('permissions/<str:permission_id>/', views.permission_detail, name='detail'),  # Alias para compatibilidade com testes
     path('permissions/<str:permission_id>/edit/', views.permission_edit, name='permission_edit'),
     path('permissions/<str:permission_id>/edit/', views.permission_edit, name='edit'),  # Alias para compatibilidade com testes
     path('permissions/<str:permission_id>/delete/', views.permission_delete, name='permission_delete'),
     path('permissions/<str:permission_id>/delete/', views.permission_delete, name='delete'),  # Alias para compatibilidade com testes
-    path('permissions/bulk/', views.bulk_permissions, name='bulk_permissions'),
-    path('permissions/bulk/', views.bulk_permissions, name='bulk'),  # Alias para compatibilidade com testes
     
-    # Roles
+    # Roles - URLs específicas primeiro, genéricas depois
     path('roles/', views.role_list, name='role_list'),
-    path('roles/<str:role_id>/', views.role_detail, name='role_detail'),
     path('roles/create/', views.role_create, name='role_create'),
+    path('roles/<str:role_id>/', views.role_detail, name='role_detail'),
     path('roles/<str:role_id>/edit/', views.role_edit, name='role_edit'),
     path('roles/<str:role_id>/delete/', views.role_delete, name='role_delete'),
     
