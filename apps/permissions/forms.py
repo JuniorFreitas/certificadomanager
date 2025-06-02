@@ -1,7 +1,7 @@
 from django import forms
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Row, Column, Submit, Button, Fieldset, HTML
-from crispy_forms.bootstrap import FormActions
+from crispy_forms.layout import Layout, Row, Column, Submit, Button, Fieldset, HTML, Div, Field
+from crispy_forms.bootstrap import FormActions, PrependedText, AppendedText
 from .models import Permission, Role, UserRole
 from apps.users.models import User
 
@@ -75,31 +75,27 @@ class RoleForm(forms.ModelForm):
         model = Role
         fields = ['name', 'description', 'is_active']
         widgets = {
-            'name': forms.Select(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
-        help_texts = {
-            'name': 'Tipo de role no sistema',
-            'description': 'Descrição detalhada das responsabilidades do role',
-            'is_active': 'Role ativo no sistema',
+            'description': forms.Textarea(attrs={'rows': 3}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
+        self.helper.form_method = 'post'
         self.helper.layout = Layout(
-            Fieldset(
-                'Informações do Role',
-                'name',
-                'description',
-                HTML('<div class="form-check mt-3">'),
-                'is_active',
-                HTML('</div>'),
+            Row(
+                Column('name', css_class='form-group col-md-6 mb-3'),
+                Column('is_active', css_class='form-group col-md-6 mb-3'),
+                css_class='form-row'
             ),
-            FormActions(
-                Submit('submit', 'Salvar', css_class='btn btn-primary'),
-                Button('cancel', 'Cancelar', css_class='btn btn-secondary', onclick='history.back()'),
+            Row(
+                Column('description', css_class='form-group col-md-12 mb-3'),
+                css_class='form-row'
+            ),
+            Div(
+                Submit('submit', 'Salvar', css_class='btn btn-primary me-2'),
+                HTML('<a href="{% url "permissions:role_list" %}" class="btn btn-secondary">Cancelar</a>'),
+                css_class='d-flex gap-2'
             )
         )
 
@@ -259,6 +255,67 @@ class BulkPermissionForm(forms.Form):
             ),
             FormActions(
                 Submit('submit', 'Aplicar Permissões', css_class='btn btn-primary'),
+                Button('cancel', 'Cancelar', css_class='btn btn-secondary', onclick='history.back()'),
+            )
+        )
+
+    def save(self, created_by):
+        """Salva as permissões em lote"""
+        permissions = []
+        users = self.cleaned_data['users']
+        permission_types = self.cleaned_data['permissions']
+        granted = self.cleaned_data['granted']
+        
+        for user in users:
+            for permission_type in permission_types:
+                permission, created = Permission.objects.get_or_create(
+                    user=user,
+                    permission_type=permission_type,
+                    defaults={
+                        'granted': granted,
+                        'usu_cad': created_by
+                    }
+                )
+                
+                if not created:
+                    permission.granted = granted
+                    permission.usu_atu = created_by
+                    permission.save()
+                
+                permissions.append(permission)
+        
+        return permissions
+
+
+class RolePermissionForm(forms.Form):
+    """Formulário para definir permissões padrão de um role"""
+    
+    permissions = forms.MultipleChoiceField(
+        choices=Permission.PERMISSION_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        label='Permissões Padrão',
+        help_text='Selecione as permissões que serão concedidas automaticamente aos usuários com este role',
+        required=False
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.role = kwargs.pop('role', None)
+        super().__init__(*args, **kwargs)
+        
+        # Se estamos editando um role, marcar as permissões já associadas
+        if self.role:
+            # Aqui você pode implementar a lógica para carregar permissões existentes
+            # Por exemplo, se você tiver um campo de permissões padrão no modelo Role
+            pass
+        
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Fieldset(
+                'Permissões Padrão do Role',
+                'permissions',
+            ),
+            FormActions(
+                Submit('submit', 'Salvar Permissões', css_class='btn btn-primary'),
                 Button('cancel', 'Cancelar', css_class='btn btn-secondary', onclick='history.back()'),
             )
         ) 

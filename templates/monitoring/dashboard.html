@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - FCM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-speedometer2"></i> {{ title }}</h1>
+    <div class="btn-group" role="group">
+        <a href="{% url 'monitoring:alert_rule_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus"></i> Nova Regra
+        </a>
+        <a href="{% url 'monitoring:cost_alert_create' %}" class="btn btn-success">
+            <i class="bi bi-currency-dollar"></i> Alerta de Custo
+        </a>
+    </div>
+</div>
+
+<!-- Estatísticas Principais -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ stats.total_alerts }}</h4>
+                        <p class="mb-0">Alertas Ativos</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-exclamation-triangle display-4"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'monitoring:alert_list' %}?status=open" class="text-white text-decoration-none">
+                    <i class="bi bi-arrow-right"></i> Ver alertas
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ stats.critical_alerts }}</h4>
+                        <p class="mb-0">Críticos</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-shield-exclamation display-4"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'monitoring:alert_list' %}?severity=critical" class="text-white text-decoration-none">
+                    <i class="bi bi-arrow-right"></i> Ver críticos
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ stats.total_rules }}</h4>
+                        <p class="mb-0">Regras Ativas</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-gear display-4"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'monitoring:alert_rule_list' %}" class="text-white text-decoration-none">
+                    <i class="bi bi-arrow-right"></i> Ver regras
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ stats.monitored_accounts }}</h4>
+                        <p class="mb-0">Contas Monitoradas</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-cloud display-4"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'accounts:list' %}" class="text-white text-decoration-none">
+                    <i class="bi bi-arrow-right"></i> Ver contas
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertas por Severidade -->
+{% if alerts_by_severity %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Alertas por Severidade</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="severityChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contas com Mais Alertas -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Contas com Mais Alertas</h5>
+            </div>
+            <div class="card-body">
+                {% if accounts_with_alerts %}
+                    {% for account in accounts_with_alerts %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>{{ account.account__nome }}</span>
+                            <span class="badge bg-danger">{{ account.alert_count }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">Nenhum alerta ativo</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Alertas Recentes e Métricas -->
+<div class="row">
+    <!-- Alertas Recentes -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-bell"></i> Alertas Recentes</h5>
+                <a href="{% url 'monitoring:alert_list' %}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+            </div>
+            <div class="card-body">
+                {% if recent_alerts %}
+                    <div class="list-group list-group-flush">
+                        {% for alert in recent_alerts %}
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">{{ alert.rule.name }}</div>
+                                <p class="mb-1 text-muted small">{{ alert.account.nome }}</p>
+                                <small class="text-muted">{{ alert.triggered_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            <div>
+                                <span class="badge {{ alert.severity_badge_class }} mb-1">{{ alert.rule.get_severity_display }}</span><br>
+                                <span class="badge {{ alert.status_badge_class }}">{{ alert.get_status_display }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-check-circle display-4 text-success"></i>
+                        <p class="text-muted mt-2">Nenhum alerta ativo</p>
+                        <a href="{% url 'monitoring:alert_rule_create' %}" class="btn btn-success btn-sm">
+                            <i class="bi bi-plus"></i> Criar primeira regra
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Métricas Recentes -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Métricas Recentes (24h)</h5>
+                <a href="{% url 'monitoring:metrics' %}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+            </div>
+            <div class="card-body">
+                {% if recent_metrics %}
+                    {% for metric in recent_metrics %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ metric.metric_name }}</strong>
+                                <small class="text-muted d-block">{{ metric.count }} pontos de dados</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">{{ metric.avg_value|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-graph-up display-4 text-muted"></i>
+                        <p class="text-muted mt-2">Nenhuma métrica coletada</p>
+                        <button class="btn btn-primary btn-sm" onclick="collectMetrics()">
+                            <i class="bi bi-arrow-clockwise"></i> Coletar métricas
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertas de Custo -->
+{% if cost_alerts %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> Alertas de Custo</h5>
+                <a href="{% url 'monitoring:cost_alerts_list' %}" class="btn btn-sm btn-outline-success">Ver todos</a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for cost_alert in cost_alerts %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card {% if cost_alert.is_over_threshold %}border-danger{% endif %}">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ cost_alert.name }}</h6>
+                                    <p class="card-text text-muted small">{{ cost_alert.account.nome }}</p>
+                                    
+                                    <!-- Barra de progresso -->
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar {% if cost_alert.is_over_threshold %}bg-danger{% else %}bg-success{% endif %}" 
+                                             style="width: {{ cost_alert.usage_percentage|floatformat:0 }}%"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">${{ cost_alert.current_spend }}</small>
+                                        <small class="text-muted">${{ cost_alert.budget_amount }}</small>
+                                    </div>
+                                    
+                                    {% if cost_alert.is_over_threshold %}
+                                        <div class="alert alert-danger alert-sm mt-2 mb-0">
+                                            <i class="bi bi-exclamation-triangle"></i> Limite excedido!
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de alertas por severidade
+    {% if alerts_by_severity %}
+    const severityData = {
+        labels: [
+            {% for item in alerts_by_severity %}
+                '{{ item.rule__severity|capfirst }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for item in alerts_by_severity %}
+                    {{ item.count }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: [
+                '#6c757d', // low - secondary
+                '#ffc107', // medium - warning  
+                '#dc3545', // high - danger
+                '#212529'  // critical - dark
+            ]
+        }]
+    };
+    
+    const severityChart = new Chart(document.getElementById('severityChart'), {
+        type: 'doughnut',
+        data: severityData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+
+// Função para coletar métricas
+function collectMetrics() {
+    // Implementar coleta de métricas via AJAX
+    const accounts = {{ stats.monitored_accounts }};
+    if (accounts > 0) {
+        alert('Funcionalidade de coleta de métricas será implementada em breve!');
+    } else {
+        alert('Nenhuma conta monitorada encontrada. Configure regras de alerta primeiro.');
+    }
+}
+
+// Auto-refresh da página a cada 5 minutos
+setTimeout(function() {
+    location.reload();
+}, 300000);
+</script>
+{% endblock %} 

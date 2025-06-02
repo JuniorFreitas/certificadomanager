@@ -1,206 +1,112 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Roles - FCM{% endblock %}
+{% block title %}Lista de Roles - FCM{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-shield"></i> Roles</h1>
-    <div class="btn-group" role="group">
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Roles</h1>
         <a href="{% url 'permissions:role_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Novo Role
-        </a>
-        <a href="{% url 'permissions:list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar às Permissões
+            <i class="fas fa-plus"></i> Novo Role
         </a>
     </div>
-</div>
 
-<!-- Estatísticas -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="mb-0">{{ stats.total }}</h4>
-                        <p class="mb-0">Total de Roles</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-shield fs-2"></i>
-                    </div>
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" placeholder="Buscar..." value="{{ search }}">
                 </div>
-            </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-control">
+                        <option value="">Todos os status</option>
+                        <option value="active" {% if status == 'active' %}selected{% endif %}>Ativos</option>
+                        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inativos</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary">Buscar</button>
+                </div>
+            </form>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="mb-0">{{ stats.active }}</h4>
-                        <p class="mb-0">Ativos</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-check-circle fs-2"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-secondary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="mb-0">{{ stats.inactive }}</h4>
-                        <p class="mb-0">Inativos</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-x-circle fs-2"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Lista de Roles -->
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="bi bi-list"></i> Roles do Sistema
-            <span class="badge bg-secondary">{{ roles.count }}</span>
-        </h5>
-    </div>
-    <div class="card-body">
-        {% if roles %}
-            <div class="row">
-                {% for role in roles %}
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100 {% if not role.is_active %}border-secondary{% endif %}">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">
-                                <span class="badge {{ role.badge_class }}">
-                                    {{ role.get_name_display }}
-                                </span>
-                            </h6>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                                        type="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-three-dots"></i>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'permissions:role_detail' role.id %}">
-                                            <i class="bi bi-eye"></i> Ver Detalhes
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'permissions:role_edit' role.id %}">
-                                            <i class="bi bi-pencil"></i> Editar
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <a class="dropdown-item text-danger" href="{% url 'permissions:role_delete' role.id %}">
-                                            <i class="bi bi-trash"></i> Excluir
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <strong>Status:</strong>
+    <!-- Lista de Roles -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Descrição</th>
+                            <th>Status</th>
+                            <th>Usuários</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for role in page_obj %}
+                        <tr>
+                            <td>
+                                <span class="badge {{ role.badge_class }}">{{ role.get_name_display }}</span>
+                            </td>
+                            <td>{{ role.description|default:"-" }}</td>
+                            <td>
                                 {% if role.is_active %}
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Ativo
-                                    </span>
+                                    <span class="badge bg-success">Ativo</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">
-                                        <i class="bi bi-x-circle"></i> Inativo
-                                    </span>
+                                    <span class="badge bg-secondary">Inativo</span>
                                 {% endif %}
-                            </div>
-                            
-                            <div class="mb-3">
-                                <strong>Usuários:</strong>
-                                <span class="badge bg-info">{{ role.user_count }}</span>
-                            </div>
-                            
-                            {% if role.description %}
-                            <div class="mb-3">
-                                <strong>Descrição:</strong>
-                                <p class="text-muted small mb-0">{{ role.description|truncatewords:15 }}</p>
-                            </div>
-                            {% endif %}
-                            
-                            <div class="text-muted small">
-                                <i class="bi bi-calendar"></i> Criado em {{ role.data_cad|date:"d/m/Y" }}
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <div class="d-flex gap-2">
-                                <a href="{% url 'permissions:role_detail' role.id %}" 
-                                   class="btn btn-sm btn-outline-primary flex-fill">
-                                    <i class="bi bi-eye"></i> Detalhes
-                                </a>
-                                <a href="{% url 'permissions:role_edit' role.id %}" 
-                                   class="btn btn-sm btn-outline-warning">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
+                            </td>
+                            <td>{{ role.userrole_set.count }}</td>
+                            <td>
+                                <a href="{% url 'permissions:role_detail' role.id %}" class="btn btn-sm btn-outline-info">Ver</a>
+                                <a href="{% url 'permissions:role_edit' role.id %}" class="btn btn-sm btn-outline-primary">Editar</a>
+                                <a href="{% url 'permissions:role_delete' role.id %}" class="btn btn-sm btn-outline-danger">Excluir</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Nenhum role encontrado</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-shield display-1 text-muted"></i>
-                <h3 class="mt-3">Nenhum role encontrado</h3>
-                <p class="text-muted">Comece criando o primeiro role do sistema.</p>
-                <a href="{% url 'permissions:role_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Criar Primeiro Role
-                </a>
-            </div>
-        {% endif %}
-    </div>
-</div>
 
-<!-- Informações sobre Roles -->
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Sobre os Roles</h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <h6><i class="bi bi-shield-exclamation text-danger"></i> Administrador</h6>
-                <p class="small text-muted">
-                    Acesso total ao sistema. Pode gerenciar usuários, permissões, 
-                    certificados, contas e recursos.
-                </p>
-                
-                <h6><i class="bi bi-shield-check text-warning"></i> Gerente</h6>
-                <p class="small text-muted">
-                    Acesso de supervisão. Pode visualizar relatórios e gerenciar 
-                    recursos específicos da sua área.
-                </p>
-            </div>
-            <div class="col-md-6">
-                <h6><i class="bi bi-shield text-primary"></i> Usuário</h6>
-                <p class="small text-muted">
-                    Acesso padrão. Pode gerenciar certificados e recursos 
-                    conforme suas permissões específicas.
-                </p>
-                
-                <h6><i class="bi bi-shield-slash text-secondary"></i> Visualizador</h6>
-                <p class="small text-muted">
-                    Acesso somente leitura. Pode visualizar informações 
-                    mas não pode fazer alterações.
-                </p>
-            </div>
+            <!-- Paginação -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Paginação">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Anterior</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Próximo</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
         </div>
     </div>
 </div>
